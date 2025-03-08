@@ -38,18 +38,23 @@ class OllamaVisionOptionsFlow(config_entries.OptionsFlow):
         self.config_entry = config_entry
 
     async def async_step_init(self, user_input=None):
+        # Use current options or fallback to data
+        current_host = self.config_entry.options.get(
+            CONF_OLLAMA_HOST,
+            self.config_entry.data.get(CONF_OLLAMA_HOST, DEFAULT_OLLAMA_HOST)
+        )
+        current_model = self.config_entry.options.get(
+            CONF_OLLAMA_MODEL,
+            self.config_entry.data.get(CONF_OLLAMA_MODEL, DEFAULT_MODEL)
+        )
+
         data_schema = vol.Schema({
-            vol.Required(
-                CONF_OLLAMA_HOST,
-                default=self.config_entry.data.get(CONF_OLLAMA_HOST, DEFAULT_OLLAMA_HOST)
-            ): str,
-            vol.Required(
-                CONF_OLLAMA_MODEL,
-                default=self.config_entry.data.get(CONF_OLLAMA_MODEL, DEFAULT_MODEL)
-            ): str,
+            vol.Required(CONF_OLLAMA_HOST, default=current_host): str,
+            vol.Required(CONF_OLLAMA_MODEL, default=current_model): str,
         })
 
         if user_input is not None:
+            # Save new options
             return self.async_create_entry(title="", data=user_input)
 
         return self.async_show_form(
