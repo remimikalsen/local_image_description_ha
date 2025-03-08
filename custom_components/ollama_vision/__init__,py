@@ -1,19 +1,31 @@
+"""Ollama Vision integration."""
 import base64
 from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from .const import DOMAIN, CONF_OLLAMA_HOST, CONF_OLLAMA_MODEL, DEFAULT_OLLAMA_HOST, DEFAULT_MODEL
+from homeassistant.helpers.typing import ConfigType
+from homeassistant.const import Platform
 
-async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+from .const import DOMAIN, CONF_OLLAMA_HOST, CONF_OLLAMA_MODEL
+
+# List of platforms to set up
+PLATFORMS = [Platform.SENSOR]
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Set up the Ollama Vision component."""
+    hass.data.setdefault(DOMAIN, {})
     return True
 
-async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Set up Ollama Vision from a config entry."""
+    hass.data.setdefault(DOMAIN, {})
     
-    # Read configuration from entry's options (fallback to data for backwards compatibility)
-    ollama_host = entry.options.get(CONF_OLLAMA_HOST, entry.data.get(CONF_OLLAMA_HOST, DEFAULT_OLLAMA_HOST))
-    ollama_model = entry.options.get(CONF_OLLAMA_MODEL, entry.data.get(CONF_OLLAMA_MODEL, DEFAULT_MODEL))
+    ollama_host = entry.data[CONF_OLLAMA_HOST]
+    ollama_model = entry.data[CONF_OLLAMA_MODEL]
     session = async_get_clientsession(hass)
 
     async def handle_send_image(call: ServiceCall):
+        """Handle the service call to describe an image."""
         image_url = call.data.get("image_url")
         prompt = call.data.get("prompt")
         image_name = call.data.get("image_name")
@@ -53,9 +65,10 @@ async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
 
                 safe_name = image_name.lower().replace(' ', '_')
 
-                # Dynamisk oppretting/oppdatering av sensor-tilstand
-                hass.states.async_set(f"{DOMAIN}.{safe_name}", new_state=description)
+                # Create/update sensor state
+                hass.states.async_set(f"{DOMAIN}.{safe_name}", description)
 
+            # Fire event with results
             hass.bus.async_fire(f"{DOMAIN}_image_description_generated", {
                 "image_name": image_name,
                 "description": description,
@@ -65,13 +78,41 @@ async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
             hass.logger.error(f"Ollama error: {e}")
             return
 
+    # Store service function reference for cleanup
+    hass.data[DOMAIN][entry.entry_id] = {
+        "host": ollama_host,
+        "model": ollama_model,
+        "service_func": handle_send_image
+    }
+
+    # Register service
     hass.services.async_register(DOMAIN, "generate_image_description", handle_send_image)
+    
+    # Forward entry setup to platforms
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    
     return True
 
-async def async_unload_entry(hass: HomeAssistant, entry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Unload a config entry."""
+    # Unload platforms
+    unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    
+    # Remove the service
     hass.services.async_remove(DOMAIN, "generate_image_description")
-    return True
+    
+    # Clean up dynamic entities (those created through service calls)
+    # Find entities starting with domain prefix
+    for entity_id in list(hass.states.async_entity_ids(DOMAIN)):
+        hass.states.async_remove(entity_id)
+    
+    # Remove the data
+    if entry.entry_id in hass.data[DOMAIN]:
+        hass.data[DOMAIN].pop(entry.entry_id)
+    
+    return unload_ok
 
-async def async_reload_entry(hass: HomeAssistant, entry) -> None:
+async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Reload config entry."""
     await async_unload_entry(hass, entry)
     await async_setup_entry(hass, entry)

@@ -1,7 +1,7 @@
 {
     "domain": "ollama_vision",
     "name": "Ollama Vision",
-    "version": "0.0.8",
+    "version": "0.0.9",
     "config_flow": true,
     "documentation": "https://github.com/remimikalsen/local_image_description_ha",
     "issue_tracker": "https://github.com/remimikalsen/local_image_description_ha/issues",
