@@ -27,14 +27,14 @@ Go to Home Assistant's Configuration page.
 3. Search for "Ollama Vision" and select it.
 
 *You will be prompted to enter the following details:*
-- Ollama Host: The URL of your local Ollama server (default: http://localhost:11434).
+- Ollama Host: The URL of your local Ollama server (default: localhost).
+- Ollama Port: The URL of your local Ollama server (default: 11434).
 - Ollama Model: The model to use for image description (default: moondream).
-- Prompt: The default prompt to use for generating descriptions (default: This image is from a security camera located above my front door. Describe the gender, age, mood, hair style and the clothes of the person in this image.).
 
 After entering the details, click "Submit" to save the configuration.
 Your integration should now be set up and ready to use. 
 
-You can send images for description using the `ollama_vision` service, for example from an automation upon motion detection from Frigate
+You can send images for description using the `ollama_vision.analyze_image` service, for example from an automation upon motion detection from Frigate
 
 ```
 alias: Describe person at veranda
@@ -45,10 +45,11 @@ conditions:
   - "{{ trigger.payload_json['after']['label'] == 'person' }}"
   - "{{ 'veranda' in trigger.payload_json['after']['entered_zones'] }}"
 actions:
-  - service: ollama_vision.generate_image_description
+  - service: ollama_vision.analyze_image
     data:
       image_url: "http://homeassistant.local:8123/api/frigate/notifications/{{trigger.payload_json['after']['id']}}/thumbnail.jpg"
-      camera_name: "veranda"
+      image_name: "veranda"
+      prompt: "This image is from a security camera located above my door. Describe the gender, age, mood, hair style and the clothes of the person in this image."
 ```
 
 This will add an image description to:

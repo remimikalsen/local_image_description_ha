@@ -1,0 +1,36 @@
+{
+    "config": {
+      "step": {
+        "user": {
+          "title": "Connect to Ollama",
+          "description": "Set up Ollama Vision integration",
+          "data": {
+            "name": "Name",
+            "host": "Host",
+            "port": "Port",
+            "model": "Ollama Vision Model"
+          }
+        }
+      },
+      "error": {
+        "cannot_connect": "Failed to connect to Ollama",
+        "unknown": "Unexpected error"
+      },
+      "abort": {
+        "already_configured": "Ollama is already configured"
+      }
+    },
+    "options": {
+      "step": {
+        "init": {
+          "title": "Ollama Vision Options",
+          "description": "Update your Ollama connection settings",
+          "data": {
+            "host": "Host",
+            "port": "Port",
+            "model": "Ollama Vision Model"
+          }
+        }
+      }
+    }
+  }

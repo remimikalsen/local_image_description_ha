@@ -1,12 +1,25 @@
-generate_image_description:
-  description: Sends an image URL to Ollama for description generation.
+analyze_image:
+  name: Analyze Image
+  description: "Send an image to Ollama for analysis and create a sensor with the result."
   fields:
     image_url:
-      description: "URL of the image to describe"
-      example: "http://homeassistant.local:8123/api/frigate/notifications/<id>/thumbnail.jpg"
-    image_name:
-      description: "A static alias of the image url used to store the latest state of the image, typically the name of the camera that is the source of a screenshot."
-      example: "veranda"
+      name: Image URL
+      description: URL of the image to analyze
+      required: true
+      example: "https://example.com/image.jpg"
+      selector:
+        text:
     prompt:
-      description: "Prompt to use for the description generation"
-      example: "This image is from a security camera located above a door. Describe the gender, age, mood, hair style and the clothes of the person in this image."
+      name: Prompt
+      description: Prompt to send to Ollama with the image
+      required: true
+      example: "Describe what you see in this image in detail"
+      selector:
+        text:
+    image_name:
+      name: Image Name
+      description: Unique name for this image (used for sensor naming)
+      required: true
+      example: "front_door_camera"
+      selector:
+        text:

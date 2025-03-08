@@ -1,81 +1,103 @@
 """Config flow for Ollama Vision integration."""
-from __future__ import annotations
-
-from typing import Any
+import logging
+import aiohttp
+import voluptuous as vol
 
 from homeassistant import config_entries
-import voluptuous as vol
+from homeassistant.core import callback
+from homeassistant.const import CONF_NAME
 
 from .const import (
     DOMAIN,
-    CONF_OLLAMA_HOST,
-    CONF_OLLAMA_MODEL,
-    DEFAULT_OLLAMA_HOST,
+    CONF_HOST,
+    CONF_PORT,
+    CONF_MODEL,
+    DEFAULT_PORT,
     DEFAULT_MODEL,
 )
 
+_LOGGER = logging.getLogger(__name__)
 
 class OllamaVisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Ollama Vision."""
 
     VERSION = 1
+    CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_POLL
 
-    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> config_entries.FlowResult:
+    async def async_step_user(self, user_input=None):
         """Handle the initial step."""
-        data_schema = vol.Schema({
-            vol.Required(CONF_OLLAMA_HOST, default=DEFAULT_OLLAMA_HOST): str,
-            vol.Required(CONF_OLLAMA_MODEL, default=DEFAULT_MODEL): str,
-        })
+        errors = {}
 
         if user_input is not None:
-            # You could add validation here before creating the entry
-            # For example, try to connect to the Ollama host
+            # Test connection to Ollama
+            try:
+                session = aiohttp.ClientSession()
+                api_url = f"http://{user_input[CONF_HOST]}:{user_input[CONF_PORT]}/api/version"
+                async with session.get(api_url) as response:
+                    if response.status == 200:
+                        await session.close()
+                        return self.async_create_entry(
+                            title=user_input[CONF_NAME],
+                            data=user_input
+                        )
+                    errors["base"] = "cannot_connect"
+                await session.close()
+            except aiohttp.ClientError:
+                errors["base"] = "cannot_connect"
+            except Exception:  # pylint: disable=broad-except
+                _LOGGER.exception("Unexpected exception")
+                errors["base"] = "unknown"
 
-            return self.async_create_entry(
-                title=f"Ollama Vision ({user_input[CONF_OLLAMA_HOST]})",
-                data=user_input
-            )
-
+        # Show form for user input
         return self.async_show_form(
             step_id="user",
-            data_schema=data_schema,
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_NAME): str,
+                    vol.Required(CONF_HOST): str,
+                    vol.Required(CONF_PORT, default=DEFAULT_PORT): int,
+                    vol.Required(CONF_MODEL, default=DEFAULT_MODEL): str,
+                }
+            ),
+            errors=errors,
         )
 
     @staticmethod
-    def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> OllamaVisionOptionsFlow:
+    @callback
+    def async_get_options_flow(config_entry):
         """Get the options flow for this handler."""
         return OllamaVisionOptionsFlow(config_entry)
 
 
 class OllamaVisionOptionsFlow(config_entries.OptionsFlow):
-    """Handle options."""
+    """Handle a option flow for Ollama Vision."""
 
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+    def __init__(self, config_entry):
         """Initialize options flow."""
         self.config_entry = config_entry
 
-    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> config_entries.FlowResult:
-        """Manage the options."""
-        # Use current options or fallback to data
-        current_host = self.config_entry.options.get(
-            CONF_OLLAMA_HOST,
-            self.config_entry.data.get(CONF_OLLAMA_HOST, DEFAULT_OLLAMA_HOST)
-        )
-        current_model = self.config_entry.options.get(
-            CONF_OLLAMA_MODEL,
-            self.config_entry.data.get(CONF_OLLAMA_MODEL, DEFAULT_MODEL)
-        )
-
-        data_schema = vol.Schema({
-            vol.Required(CONF_OLLAMA_HOST, default=current_host): str,
-            vol.Required(CONF_OLLAMA_MODEL, default=current_model): str,
-        })
-
+    async def async_step_init(self, user_input=None):
+        """Handle options flow."""
         if user_input is not None:
-            # Save new options
             return self.async_create_entry(title="", data=user_input)
 
+        options = self.config_entry.options
         return self.async_show_form(
             step_id="init",
-            data_schema=data_schema,
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_HOST, 
+                        default=options.get(CONF_HOST, self.config_entry.data.get(CONF_HOST))
+                    ): str,
+                    vol.Required(
+                        CONF_PORT, 
+                        default=options.get(CONF_PORT, self.config_entry.data.get(CONF_PORT, DEFAULT_PORT))
+                    ): int,
+                    vol.Required(
+                        CONF_MODEL, 
+                        default=options.get(CONF_MODEL, self.config_entry.data.get(CONF_MODEL, DEFAULT_MODEL))
+                    ): str,
+                }
+            ),
         )

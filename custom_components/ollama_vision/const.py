@@ -1,11 +1,19 @@
 """Constants for the Ollama Vision integration."""
-import logging
 
 DOMAIN = "ollama_vision"
-LOGGER = logging.getLogger(__package__)
+CONF_HOST = "host"
+CONF_PORT = "port"
+CONF_MODEL = "model"
 
-CONF_OLLAMA_HOST = "ollama_host"
-CONF_OLLAMA_MODEL = "ollama_model"
-
-DEFAULT_OLLAMA_HOST = "http://localhost:11434"
+# Default values
+DEFAULT_PORT = 11434
 DEFAULT_MODEL = "moondream"
+
+# Service call constants
+SERVICE_ANALYZE_IMAGE = "analyze_image"
+ATTR_IMAGE_URL = "image_url"
+ATTR_PROMPT = "prompt"
+ATTR_IMAGE_NAME = "image_name"
+
+# Event constants
+EVENT_IMAGE_ANALYZED = "ollama_vision_image_analyzed"
