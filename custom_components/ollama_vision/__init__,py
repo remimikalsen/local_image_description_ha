@@ -33,7 +33,8 @@ async def async_setup_entry(hass: HomeAssistant, entry):
             return
 
         prompt = camera_prompt = camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_prompts and camera_prompt[camera_name] or entry.data[CONF_DEFAULT_PROMPT]
-        prompt = camera_prompt if (camera_prompt := camera_name in camera_name and camera_prompt.get(camera_name)) else entry.data[CONF_DEFAULT_PROMPT]
+        prompt = camera_prompts.get(camera_name, entry.data[CONF_DEFAULT_PROMPT])
+
 
         try:
             async with session.get(image_url) as response:
@@ -59,8 +60,6 @@ async def async_setup_entry(hass: HomeAssistant, entry):
                     return
                 data = await res.json()
                 description = data.get("response", "").strip()
-                safe_name = camera_name.lower().replace(' ', '_')
-                entity_id = f"{DOMAIN}.{safe_name}"
                 hass.states.async_set(entity_id=entity_id(camera_name), new_state=description)
         except Exception as e:
             hass.logger.error(f"Ollama error: {e}")
