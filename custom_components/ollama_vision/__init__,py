@@ -1,21 +1,7 @@
 import base64
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.const import Platform
-
-from .const import (
-    DOMAIN,
-    CONF_OLLAMA_HOST,
-    CONF_OLLAMA_MODEL,
-)
-
-PLATFORMS: list[Platform] = [
-    Platform.SENSOR,
-]
-
-def entity_id(image_name: str) -> str:
-    safe_name = image_name.lower().replace(' ', '_')
-    return f"{DOMAIN}.{safe_name}"
+from .const import DOMAIN, CONF_OLLAMA_HOST, CONF_OLLAMA_MODEL
 
 async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
     ollama_host = entry.data[CONF_OLLAMA_HOST]
@@ -29,6 +15,10 @@ async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
 
         if not image_url or not prompt or not image_name:
             hass.logger.error("Image URL, prompt, and image name must be provided when calling generate_image_description")
+            return
+        
+        if not image_name.isalpha():
+            hass.logger.error("Image name must only consist of letters a-z")
             return
 
         try:
@@ -55,7 +45,11 @@ async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
                     return
                 data = await res.json()
                 description = data.get("response", "").strip()
-                hass.states.async_set(entity_id(image_name), new_state=description)
+
+                safe_name = image_name.lower().replace(' ', '_')
+
+                # Dynamisk oppretting/oppdatering av sensor-tilstand
+                hass.states.async_set(f"{DOMAIN}.{safe_name}", new_state=description)
 
             hass.bus.async_fire(f"{DOMAIN}_image_description_generated", {
                 "image_name": image_name,
@@ -67,19 +61,12 @@ async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
             return
 
     hass.services.async_register(DOMAIN, "generate_image_description", handle_send_image)
-    # Forward config entry to sensor platform
-    hass.async_create_task(
-        hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    )
     return True
 
 async def async_unload_entry(hass: HomeAssistant, entry) -> bool:
-    """Handle removal of an entry."""
-    # Fjern tjenesten før unloading
     hass.services.async_remove(DOMAIN, "generate_image_description")
-    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    return True
 
 async def async_reload_entry(hass: HomeAssistant, entry) -> None:
-    """Reload config entry."""
     await async_unload_entry(hass, entry)
     await async_setup_entry(hass, entry)
