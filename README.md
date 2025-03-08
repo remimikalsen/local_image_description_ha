@@ -16,6 +16,7 @@ To install the "Ollama Vision" integration in Home Assistant, follow these steps
 3. Close the modal, search for "Ollama Vision" and click on it
   - Choose "Download"
 
+At this point, you must restart Home Assistant before you can continue.
 
 ## Configuration
 
