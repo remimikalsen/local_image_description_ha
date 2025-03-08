@@ -1,15 +1,11 @@
 from homeassistant import config_entries
-from homeassistant.helpers.selector import selector
 import voluptuous as vol
 from .const import (
     DOMAIN,
     CONF_OLLAMA_HOST,
     CONF_OLLAMA_MODEL,
-    CONF_DEFAULT_PROMPT,
-    CONF_CAMERAS,
-    DEFAULT_PROMPT,
-    DEFAULT_MODEL,
     DEFAULT_OLLAMA_HOST,
+    DEFAULT_MODEL,
 )
 
 class OllamaVisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -20,16 +16,6 @@ class OllamaVisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         data_schema = vol.Schema({
             vol.Required(CONF_OLLAMA_HOST, default=DEFAULT_OLLAMA_HOST): str,
             vol.Required(CONF_OLLAMA_MODEL, default=DEFAULT_MODEL): str,
-            vol.Required(CONF_DEFAULT_PROMPT, default=DEFAULT_PROMPT): str,
-            vol.Optional(CONF_CAMERAS, default=[]): selector({
-                "object": {
-                    "multiple": True,
-                    "fields": [
-                        {"name": "camera_name", "selector": {"text": {}}},
-                        {"name": "camera_prompt", "selector": {"text": {"multiline": True}}},
-                    ],
-                }
-            }),
         })
 
         if user_input is not None:
