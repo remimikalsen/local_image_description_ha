@@ -30,7 +30,7 @@ class OllamaVisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     @staticmethod
-    async def async_get_options_flow(config_entry):
+    def async_get_options_flow(config_entry):
         return OllamaVisionOptionsFlow(config_entry)
 
 class OllamaVisionOptionsFlow(config_entries.OptionsFlow):
