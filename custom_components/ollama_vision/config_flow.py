@@ -16,8 +16,9 @@ CAMERA_SCHEMA = vol.Schema({
     vol.Optional("camera_prompt"): str,
 })
 
-class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    VERSION = 1
+class OllamaVisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+    VERSION = 0
+    MINOR_VERSION = 1
 
     async def async_step_user(self, user_input=None):
         errors = {}
@@ -28,7 +29,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required(CONF_OLLAMA_HOST, default=DEFAULT_OLLAMA_HOST): str,
             vol.Required(CONF_OLLAMA_MODEL, default=DEFAULT_MODEL): str,
             vol.Required(CONF_DEFAULT_PROMPT, default=DEFAULT_PROMPT): str,
-            vol.Optional(CONF_CAMERAS): vol.All(
+            vol.Optional(CONF_CAMERAS, default=[]): vol.All(
                 vol.ensure_list, [CAMERA_SCHEMA]
             )
         })

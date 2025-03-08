@@ -7,8 +7,14 @@ This is a Home Assistant integration, installable via HACS, to describe images t
 To install the "Ollama Vision" integration in Home Assistant, follow these steps:
 
 1. Ensure you have HACS (Home Assistant Community Store) installed.
-2. Add the repository to HACS (https://github.com/remimikalsen/local_image_description_ha)
-3. Install the "Ollama Vision" integration.
+2. Add the repository to HACS
+  - Go to Hacs
+  - Click the three dots in the upper right corner
+  - Paste the repository link: https://github.com/remimikalsen/local_image_description_ha
+  - Select type: Integration
+  - Add
+3. Close the modal, search for "Ollama Vision" and click on it
+  - Choose "Download"
 
 
 ## Configuration
