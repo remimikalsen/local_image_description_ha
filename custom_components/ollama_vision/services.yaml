@@ -1,0 +1,9 @@
+generate_image_description:
+  description: Sends an image URL to Ollama for description generation.
+  fields:
+    image_url:
+      description: "URL of the image to describe"
+      example: "http://homeassistant.local:8123/api/frigate/notifications/<id>/thumbnail.jpg"
+    camera_name:
+      description: "The identifier/name of the camera"
+      example: "veranda"

@@ -1,0 +1,74 @@
+import aiohttp
+import base64
+from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
+from .const import (
+    DOMAIN,
+    CONF_OLLAMA_HOST,
+    CONF_OLLAMA_MODEL,
+    CONF_DEFAULT_PROMPT,
+    CONF_CAMERAS
+)
+
+async def async_setup_entry(hass: HomeAssistant, entry):
+    ollama_host = entry.data[CONF_OLLAMA_HOST]
+    ollama_model = entry.data[CONF_OLLAMA_MODEL]
+    default_prompt = entry.data[CONF_DEFAULT_PROMPT]
+    cameras = entry.data.get(CONF_CAMERAS, [])
+
+    camera_prompts = {
+        cam["camera_name"]: cam.get("camera_prompt", default_prompt)
+        for cam in cameras
+    }
+
+    session = async_get_clientsession(hass)
+
+    async def handle_send_image(call: ServiceCall):
+        image_url = call.data.get("image_url")
+        camera_name = call.data.get("camera_name")
+
+        if not image_url or not camera_name:
+            hass.logger.error("Image URL and Camera Name must be provided")
+            return
+
+        prompt = camera_prompt = camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_name and camera_name in camera_prompts and camera_prompt[camera_name] or entry.data[CONF_DEFAULT_PROMPT]
+        prompt = camera_prompt if (camera_prompt := camera_name in camera_name and camera_prompt.get(camera_name)) else entry.data[CONF_DEFAULT_PROMPT]
+
+        try:
+            async with session.get(image_url) as response:
+                if response.status != 200:
+                    hass.logger.error(f"Failed to download image: {response.status}")
+                    return
+                image_bytes = await response.read()
+                base64_image = base64.b64encode(image_bytes).decode('utf-8')
+        except Exception as e:
+            hass.logger.error(f"Error fetching image: {e}")
+            return
+
+        payload = {
+            "model": ollama_model,
+            "prompt": prompt,
+            "images": [base64_image],
+        }
+
+        try:
+            async with session.post(f"{ollama_host}/api/generate", json=payload) as res:
+                if res.status != 200:
+                    hass.logger.error(f"Ollama response error: {res.status}")
+                    return
+                data = await res.json()
+                description = data.get("response", "").strip()
+                safe_name = camera_name.lower().replace(' ', '_')
+                entity_id = f"{DOMAIN}.{safe_name}"
+                hass.states.async_set(entity_id=entity_id(camera_name), new_state=description)
+        except Exception as e:
+            hass.logger.error(f"Ollama error: {e}")
+            return
+
+    def entity_id(cam_name):
+        safe_name = cam_name.lower().replace(' ', '_')
+        return f"{DOMAIN}.{safe_name}"
+
+    hass.services.async_register(DOMAIN, "generate_image_description", handle_send_image)
+    return True
