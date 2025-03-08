@@ -3,6 +3,9 @@ from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from .const import DOMAIN, CONF_OLLAMA_HOST, CONF_OLLAMA_MODEL
 
+async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+    return True
+
 async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
     ollama_host = entry.data[CONF_OLLAMA_HOST]
     ollama_model = entry.data[CONF_OLLAMA_MODEL]
