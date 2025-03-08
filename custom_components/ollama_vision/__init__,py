@@ -1,118 +1,103 @@
-"""Ollama Vision integration."""
+"""
+Custom integration for Ollama Vision with Home Assistant.
+"""
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
 import base64
-from homeassistant.core import HomeAssistant, ServiceCall
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.typing import ConfigType
 from homeassistant.const import Platform
+from homeassistant.core import ServiceCall
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .const import DOMAIN, CONF_OLLAMA_HOST, CONF_OLLAMA_MODEL
+from .const import DOMAIN, CONF_OLLAMA_HOST, CONF_OLLAMA_MODEL, LOGGER
+from .coordinator import OllamaVisionDataUpdateCoordinator
 
-# List of platforms to set up
-PLATFORMS = [Platform.SENSOR]
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
+    from homeassistant.config_entries import ConfigEntry
 
-async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Set up the Ollama Vision component."""
-    hass.data.setdefault(DOMAIN, {})
-    return True
+PLATFORMS: list[Platform] = [
+    Platform.SENSOR,
+]
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+) -> bool:
     """Set up Ollama Vision from a config entry."""
     hass.data.setdefault(DOMAIN, {})
     
-    ollama_host = entry.data[CONF_OLLAMA_HOST]
-    ollama_model = entry.data[CONF_OLLAMA_MODEL]
+    # Create client session
     session = async_get_clientsession(hass)
-
-    async def handle_send_image(call: ServiceCall):
+    
+    # Create coordinator for this entry
+    coordinator = OllamaVisionDataUpdateCoordinator(
+        hass=hass,
+        logger=LOGGER,
+        name=f"{DOMAIN}_{entry.entry_id}",
+        ollama_host=entry.data[CONF_OLLAMA_HOST],
+        ollama_model=entry.data[CONF_OLLAMA_MODEL],
+        session=session,
+    )
+    
+    # Store coordinator and other data
+    hass.data[DOMAIN][entry.entry_id] = {
+        "coordinator": coordinator,
+        "host": entry.data[CONF_OLLAMA_HOST],
+        "model": entry.data[CONF_OLLAMA_MODEL],
+    }
+    
+    # Set up service
+    async def handle_send_image(call: ServiceCall) -> None:
         """Handle the service call to describe an image."""
         image_url = call.data.get("image_url")
         prompt = call.data.get("prompt")
         image_name = call.data.get("image_name")
 
         if not image_url or not prompt or not image_name:
-            hass.logger.error("Image URL, prompt, and image name must be provided when calling generate_image_description")
+            LOGGER.error("Image URL, prompt, and image name must be provided when calling generate_image_description")
             return
         
         if not image_name.isalpha():
-            hass.logger.error("Image name must only consist of letters a-z")
+            LOGGER.error("Image name must only consist of letters a-z")
             return
 
-        try:
-            async with session.get(image_url) as response:
-                if response.status != 200:
-                    hass.logger.error(f"Failed to download image: {response.status}")
-                    return
-                image_bytes = await response.read()
-                base64_image = base64.b64encode(image_bytes).decode('utf-8')
-        except Exception as e:
-            hass.logger.error(f"Error fetching image: {e}")
-            return
-
-        payload = {
-            "model": ollama_model,
-            "prompt": prompt,
-            "images": [base64_image],
-        }
-
-        try:
-            async with session.post(f"{ollama_host}/api/generate", json=payload) as res:
-                if res.status != 200:
-                    hass.logger.error(f"Ollama response error: {res.status}")
-                    return
-                data = await res.json()
-                description = data.get("response", "").strip()
-
-                safe_name = image_name.lower().replace(' ', '_')
-
-                # Create/update sensor state
-                hass.states.async_set(f"{DOMAIN}.{safe_name}", description)
-
-            # Fire event with results
-            hass.bus.async_fire(f"{DOMAIN}_image_description_generated", {
-                "image_name": image_name,
-                "description": description,
-            })
-
-        except Exception as e:
-            hass.logger.error(f"Ollama error: {e}")
-            return
-
-    # Store service function reference for cleanup
-    hass.data[DOMAIN][entry.entry_id] = {
-        "host": ollama_host,
-        "model": ollama_model,
-        "service_func": handle_send_image
-    }
+        # Process the image using the coordinator
+        await coordinator.process_image(image_url, prompt, image_name)
 
     # Register service
     hass.services.async_register(DOMAIN, "generate_image_description", handle_send_image)
     
-    # Forward entry setup to platforms
+    # Forward the setup to platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    
+    # Register update listener
+    entry.async_on_unload(entry.add_update_listener(async_reload_entry))
     
     return True
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Unload a config entry."""
+async def async_unload_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+) -> bool:
+    """Handle removal of an entry."""
     # Unload platforms
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     
-    # Remove the service
-    hass.services.async_remove(DOMAIN, "generate_image_description")
+    # Remove the service if this is the last entry
+    if len(hass.data[DOMAIN]) <= 1:
+        hass.services.async_remove(DOMAIN, "generate_image_description")
     
-    # Clean up dynamic entities (those created through service calls)
-    # Find entities starting with domain prefix
-    for entity_id in list(hass.states.async_entity_ids(DOMAIN)):
-        hass.states.async_remove(entity_id)
-    
-    # Remove the data
+    # Remove data for this entry
     if entry.entry_id in hass.data[DOMAIN]:
         hass.data[DOMAIN].pop(entry.entry_id)
     
     return unload_ok
 
-async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+async def async_reload_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+) -> None:
     """Reload config entry."""
     await async_unload_entry(hass, entry)
     await async_setup_entry(hass, entry)
