@@ -47,7 +47,7 @@ class OllamaVisionInfoSensor(SensorEntity):
         self.entry = entry
         config = hass.data[DOMAIN][entry.entry_id]["config"]
 
-        self._attr_unique_id = f"{DOMAIN}_{entry.entry_id}_text_info"
+        self._attr_unique_id = f"{DOMAIN}_{entry.entry_id}_vision_info"
         self._attr_name = f"Ollama Vision {config['name']} Info"
         self._attr_icon = "mdi:information-outline"
         self._attr_native_value = f"{config[CONF_MODEL]} @ {config[CONF_HOST]}"
