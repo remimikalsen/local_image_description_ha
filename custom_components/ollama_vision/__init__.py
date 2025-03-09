@@ -158,14 +158,24 @@ async def handle_analyze_image(hass, call):
                     break
     
     if not entry_id_to_use:
-        # If no device_id specified or device_id not found
-        if len(hass.data[DOMAIN]) > 1 and not device_id:
+        # Filter out non-integration keys like "pending_sensors" or "created_sensors"
+        valid_entry_ids = [
+            k for k, v in hass.data[DOMAIN].items()
+            if isinstance(v, dict) and "client" in v
+        ]
+        if not valid_entry_ids:
+            # Means there are no configured integrations at all
+            raise HomeAssistantError("No configured Ollama Vision entries found. "
+                                    "Please add at least one config entry or specify device_id.")
+
+        if len(valid_entry_ids) > 1 and not device_id:
             _LOGGER.warning(
                 "Multiple Ollama Vision instances found but no device_id specified. "
                 "Using first available. Specify device_id parameter to target a specific instance."
             )
-        
-        entry_id_to_use = list(hass.data[DOMAIN].keys())[0]
+
+        # Pick the first valid entry
+        entry_id_to_use = valid_entry_ids[0]
     
     client_to_use = hass.data[DOMAIN][entry_id_to_use]["client"]
     

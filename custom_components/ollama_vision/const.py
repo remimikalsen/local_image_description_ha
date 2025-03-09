@@ -30,7 +30,7 @@ CONF_TEXT_MODEL = "text_model"
 DEFAULT_TEXT_PORT = 11434
 DEFAULT_TEXT_MODEL = "llama3.1"
 CONF_TEXT_KEEPALIVE = "text_keepalive"
-DEFAULT_TEXT_PROMPT = "Given the following brief description of what is at my front door: {description}. If it is a person, create a short, humorous roast about their appearance or style. Keep it playful, harmless. If it is something else, describe it. Make it in Norwegian and keep it to less than 300 characters."
+DEFAULT_TEXT_PROMPT = "You are an AI that introduces people who come to visit me. You are cheeky and love a roast. Based on the following description: <description>{description}</description> – introduce this guest to me. Keep it short and concise, in English."
 
 # Textual model service call constants
 ATTR_USE_TEXT_MODEL = "use_text_model"
