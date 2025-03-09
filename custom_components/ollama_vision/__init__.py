@@ -192,36 +192,51 @@ async def handle_analyze_image(hass, call):
     if entry_id_to_use not in hass.data[DOMAIN]["pending_sensors"]:
         hass.data[DOMAIN]["pending_sensors"][entry_id_to_use] = {}
     
-    # Store the sensor data
+    # Store the sensor data with vision_description as primary description
     hass.data[DOMAIN]["pending_sensors"][entry_id_to_use][image_name] = {
-        "description": final_description,
-        "vision_description": vision_description,  # Store both descriptions
+        "description": vision_description,  # Use vision output as primary description
         "image_url": image_url,
         "prompt": prompt,
-        "text_prompt": text_prompt if use_text_model else None,
-        "used_text_model": use_text_model and text_model_enabled,
         "unique_id": sensor_unique_id
     }
+
+    # Add text model data if used
+    if use_text_model and text_model_enabled:
+        hass.data[DOMAIN]["pending_sensors"][entry_id_to_use][image_name]["text_description"] = final_description
+        hass.data[DOMAIN]["pending_sensors"][entry_id_to_use][image_name]["text_prompt"] = text_prompt
+        hass.data[DOMAIN]["pending_sensors"][entry_id_to_use][image_name]["used_text_model"] = True
     
     # Update existing sensor state if it exists
     if entity_id:
-        hass.states.async_set(entity_id, final_description, {
+
+        # Use vision_description as the state (limited to 255 characters)
+        truncated_vision = vision_description[:255] if len(vision_description) > 255 else vision_description
+
+        attributes = {
             "friendly_name": f"Ollama Vision {image_name}",
             "icon": "mdi:image-search",
             "image_url": image_url,
             "prompt": prompt,
-            "vision_description": vision_description,
-            "text_prompt": text_prompt if use_text_model else None,
-            "used_text_model": use_text_model and text_model_enabled,
             "integration_id": entry_id_to_use
-        })
+        }
+        
+        # Add text model output as an attribute if it was used
+        if use_text_model and text_model_enabled:
+            attributes["text_description"] = final_description
+            attributes["text_prompt"] = text_prompt
+            attributes["used_text_model"] = True
+        
+        hass.states.async_set(entity_id, truncated_vision, attributes)
     
     # Store sensor info
     hass.data[DOMAIN][entry_id_to_use]["sensors"][image_name] = {
-        "description": final_description,
-        "vision_description": vision_description,
+        "description": vision_description,  # Use vision output as primary
         "entity_id": entity_id if entity_id else f"sensor.ollama_vision_{image_name}"
     }
+
+    # Add text description if used
+    if use_text_model and text_model_enabled:
+        hass.data[DOMAIN][entry_id_to_use]["sensors"][image_name]["text_description"] = final_description
     
     # Trigger an event to notify the sensor platform to create the entity
     hass.bus.async_fire(f"{DOMAIN}_create_sensor", {
@@ -230,17 +245,19 @@ async def handle_analyze_image(hass, call):
     })
     
     # Fire event for external consumers
-    hass.bus.async_fire(
-        EVENT_IMAGE_ANALYZED, 
-        {
-            "image_name": image_name,
-            "description": final_description,
-            "vision_description": vision_description,
-            "image_url": image_url,
-            "integration_id": entry_id_to_use,
-            "used_text_model": use_text_model and text_model_enabled
-        }
-    )
+    event_data = {
+        "image_name": image_name,
+        "description": vision_description,  # Use vision output as primary
+        "image_url": image_url,
+        "integration_id": entry_id_to_use
+    }
+
+    # Add text model data if used
+    if use_text_model and text_model_enabled:
+        event_data["text_description"] = final_description
+        event_data["used_text_model"] = True
+
+    hass.bus.async_fire(EVENT_IMAGE_ANALYZED, event_data)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

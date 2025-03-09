@@ -103,19 +103,21 @@ class OllamaVisionImageSensor(SensorEntity):
         # Get sensor data from pending_sensors
         sensor_data = hass.data[DOMAIN].get("pending_sensors", {}).get(entry_id, {}).get(image_name, {})
         
-        # Set state and attributes
-        self._attr_native_value = description
+        # Set state (vision description) - truncate if needed
+        self._attr_native_value = description[:255] if len(description) > 255 else description
+        
+        # Set attributes
         self._attr_extra_state_attributes = {
             "image_url": image_url,
             "prompt": prompt,
             "integration_id": entry_id
         }
         
-        # Add additional attributes if available
-        if "vision_description" in sensor_data:
-            self._attr_extra_state_attributes["vision_description"] = sensor_data["vision_description"]
+        # Add text model attributes if available
+        if "text_description" in sensor_data:
+            self._attr_extra_state_attributes["text_description"] = sensor_data["text_description"]
         
-        if "text_prompt" in sensor_data and sensor_data["text_prompt"]:
+        if "text_prompt" in sensor_data:
             self._attr_extra_state_attributes["text_prompt"] = sensor_data["text_prompt"]
             
         if "used_text_model" in sensor_data:
