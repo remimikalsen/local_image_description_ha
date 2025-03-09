@@ -5,6 +5,7 @@ from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.util import slugify
 
 from .const import (
     DOMAIN,
@@ -88,12 +89,23 @@ class OllamaVisionImageSensor(SensorEntity):
         self.hass = hass
         self.entry_id = entry_id
         self.image_name = image_name
+
+        # Fetch the name of the config entry from hass.data:
+        config_name = self.hass.data[DOMAIN][entry_id]["config"]["name"]
+        # Slugify it so that Home Assistant’s auto-entity_id generation
+        # doesn’t produce weird characters:
+        config_name_slug = slugify(config_name)
+
+        # Make the user-facing name reflect both the config_name and image_name:
+        self._attr_name = f"Ollama Vision {config_name_slug} {image_name}"
+
+        # Unique ID remains the same; that’s what ensures the sensor is “the same” across restarts:
         self._attr_unique_id = f"{DOMAIN}_{entry_id}_{image_name}"
-        self._attr_name = f"Ollama Vision {image_name}"
+
         self._attr_icon = "mdi:image-search"
         self._attr_native_value = None
         self._attr_extra_state_attributes = {}
-        
+    
     @callback
     def async_schedule_update(self):
         """Update the entity when new data is received."""
@@ -114,10 +126,9 @@ class OllamaVisionImageSensor(SensorEntity):
                 })
             self._attr_extra_state_attributes = attributes
             self.async_write_ha_state()
-    
+
     async def async_update(self):
         """Fetch new state data for the sensor."""
-        # This method is used during initialization and periodic updates
         sensor_data = self.hass.data[DOMAIN]["pending_sensors"].get(self.entry_id, {}).get(self.image_name, {})
         if sensor_data:
             description = sensor_data.get("description")
@@ -134,7 +145,7 @@ class OllamaVisionImageSensor(SensorEntity):
                     "used_text_model": True
                 })
             self._attr_extra_state_attributes = attributes
-            
+
     @property
     def device_info(self):
         return self.hass.data[DOMAIN][self.entry_id]["device_info"]
