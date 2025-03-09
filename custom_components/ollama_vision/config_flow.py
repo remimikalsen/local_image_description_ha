@@ -33,91 +33,99 @@ class OllamaVisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
     CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_POLL
 
+    def __init__(self):
+        """Initialize the config flow."""
+        self.vision_config = None
+
     async def async_step_user(self, user_input=None):
-        """Handle the initial step."""
+        """Handle the initial step for vision model configuration."""
         errors = {}
 
         if user_input is not None:
-            # If text model is enabled, ensure all text model fields are provided
-            if user_input.get(CONF_TEXT_MODEL_ENABLED):
-                if not user_input.get(CONF_TEXT_HOST):
-                    errors["text_host"] = "required"
-                else:
-                    # Test connection to both Ollama instances
-                    try:
-                        failed = False
-                        session = aiohttp.ClientSession()
-                        api_url = f"http://{user_input[CONF_HOST]}:{user_input[CONF_PORT]}/api/version"
-                        async with session.get(api_url) as response:
-                            if response.status != 200:
-                                errors["base"] = "cannot_connect"
-                                failed = True
-
-                        api_url = f"http://{user_input[CONF_TEXT_HOST]}:{user_input[CONF_TEXT_PORT]}/api/version"
-                        async with session.get(api_url) as response:
-                            if response.status != 200:
-                                errors["base"] = "cannot_connect"
-                                failed = True
-                        
+            # Test connection to Ollama vision server
+            try:
+                session = aiohttp.ClientSession()
+                api_url = f"http://{user_input[CONF_HOST]}:{user_input[CONF_PORT]}/api/version"
+                async with session.get(api_url) as response:
+                    if response.status == 200:
                         await session.close()
                         
-                        if not failed:
-                            return self.async_create_entry(
-                            title=user_input[CONF_NAME],
-                                data=user_input
-                            )
+                        # Store vision config and proceed
+                        self.vision_config = user_input
                         
-                    except aiohttp.ClientError:
-                        errors["base"] = "cannot_connect"
-                    except Exception:  # pylint: disable=broad-except
-                        _LOGGER.exception("Unexpected exception")
-                        errors["base"] = "unknown"
-
-            else:
-                # Test connection to Ollama
-                try:
-                    session = aiohttp.ClientSession()
-                    api_url = f"http://{user_input[CONF_HOST]}:{user_input[CONF_PORT]}/api/version"
-                    async with session.get(api_url) as response:
-                        if response.status == 200:
-                            await session.close()
-
-                            return self.async_create_entry(
-                                title=user_input[CONF_NAME],
-                                data=user_input
-                            )
-                        errors["base"] = "cannot_connect"
-                    await session.close()
-                except aiohttp.ClientError:
+                        # If text model is enabled, go to text model config step
+                        if user_input.get(CONF_TEXT_MODEL_ENABLED):
+                            return await self.async_step_text_model()
+                        
+                        # Otherwise create entry with just vision config
+                        return self.async_create_entry(
+                            title=user_input[CONF_NAME],
+                            data=user_input
+                        )
+                    
                     errors["base"] = "cannot_connect"
-                except Exception:  # pylint: disable=broad-except
-                    _LOGGER.exception("Unexpected exception")
-                    errors["base"] = "unknown"
+                await session.close()
+            except aiohttp.ClientError:
+                errors["base"] = "cannot_connect"
+            except Exception:  # pylint: disable=broad-except
+                _LOGGER.exception("Unexpected exception")
+                errors["base"] = "unknown"
 
-        # Show form for user input
-        data_schema = vol.Schema({
-            vol.Required(CONF_NAME): str,
-            vol.Required(CONF_HOST): str,
-            vol.Required(CONF_PORT, default=DEFAULT_PORT): int,
-            vol.Required(CONF_MODEL, default=DEFAULT_MODEL): str,
-            vol.Required(CONF_VISION_KEEPALIVE, default=DEFAULT_KEEPALIVE): int,
-            vol.Optional(CONF_TEXT_MODEL_ENABLED, default=False): bool,
-        })
-        
-        # Add text model fields conditionally if text model is enabled
-        if user_input and user_input.get(CONF_TEXT_MODEL_ENABLED):
-            data_schema = data_schema.extend({
+        # Show form for vision model input
+        return self.async_show_form(
+            step_id="user",
+            data_schema=vol.Schema({
+                vol.Required(CONF_NAME): str,
+                vol.Required(CONF_HOST): str,
+                vol.Required(CONF_PORT, default=DEFAULT_PORT): int,
+                vol.Required(CONF_MODEL, default=DEFAULT_MODEL): str,
+                vol.Required(CONF_VISION_KEEPALIVE, default=DEFAULT_KEEPALIVE): int,
+                vol.Optional(CONF_TEXT_MODEL_ENABLED, default=False): bool,
+            }),
+            errors=errors,
+        )
+
+    async def async_step_text_model(self, user_input=None):
+        """Handle the text model configuration step."""
+        errors = {}
+
+        if user_input is not None:
+            # Test connection to text model Ollama server
+            try:
+                session = aiohttp.ClientSession()
+                api_url = f"http://{user_input[CONF_TEXT_HOST]}:{user_input[CONF_TEXT_PORT]}/api/version"
+                async with session.get(api_url) as response:
+                    if response.status == 200:
+                        await session.close()
+                        
+                        # Merge vision and text configs
+                        combined_config = {**self.vision_config, **user_input}
+                        
+                        return self.async_create_entry(
+                            title=self.vision_config[CONF_NAME],
+                            data=combined_config
+                        )
+                    
+                    errors["base"] = "cannot_connect"
+                await session.close()
+            except aiohttp.ClientError:
+                errors["base"] = "cannot_connect"
+            except Exception:  # pylint: disable=broad-except
+                _LOGGER.exception("Unexpected exception")
+                errors["base"] = "unknown"
+
+        # Show form for text model input
+        return self.async_show_form(
+            step_id="text_model",
+            data_schema=vol.Schema({
                 vol.Required(CONF_TEXT_HOST): str,
                 vol.Required(CONF_TEXT_PORT, default=DEFAULT_TEXT_PORT): int,
                 vol.Required(CONF_TEXT_MODEL, default=DEFAULT_TEXT_MODEL): str,
                 vol.Required(CONF_TEXT_KEEPALIVE, default=DEFAULT_KEEPALIVE): int,
-            })
-        
-        return self.async_show_form(
-            step_id="user",
-            data_schema=data_schema,
+            }),
             errors=errors,
         )
+
 
     @staticmethod
     @callback
