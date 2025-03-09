@@ -35,7 +35,7 @@ async def async_setup_entry(
         entry_id = event.data.get("entry_id")
         image_name = event.data.get("image_name")
 
-        sensor = OllamaVisionImageSensor(hass, entry.entry_id, image_name)
+        sensor = OllamaVisionImageSensor(hass, entry_id, image_name)
         async_add_entities([sensor], True)
 
     hass.bus.async_listen(f"{DOMAIN}_create_sensor", async_create_sensor_from_event)
