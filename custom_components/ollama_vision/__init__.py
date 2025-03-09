@@ -4,14 +4,13 @@ import voluptuous as vol
 import aiohttp
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers import config_validation as cv
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.const import CONF_NAME, Platform
 import homeassistant.helpers.entity_registry as er
 from homeassistant.helpers.device_registry import async_get as async_get_device_registry
-
 
 from .const import (
     DOMAIN,
@@ -21,7 +20,6 @@ from .const import (
     ATTR_IMAGE_URL,
     ATTR_PROMPT,
     ATTR_IMAGE_NAME,
-    ATTR_INTEGRATION_ID,
     ATTR_DEVICE_ID,
     SERVICE_ANALYZE_IMAGE,
     EVENT_IMAGE_ANALYZED,
@@ -45,6 +43,7 @@ ANALYZE_IMAGE_SCHEMA = vol.Schema(
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up the Ollama Vision component."""
     hass.data[DOMAIN] = {}
+    hass.data[DOMAIN]["pending_sensors"] = {}
     return True
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -76,11 +75,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         }
     }
     
-    # Register service
+    # Create service handler wrapper
+    @callback
+    def async_handle_service(call):
+        """Handle the service call."""
+        hass.async_create_task(handle_analyze_image(hass, call))
+    
+    # Register service with the wrapper
     hass.services.async_register(
         DOMAIN,
         SERVICE_ANALYZE_IMAGE,
-        lambda call: handle_analyze_image(hass, call),
+        async_handle_service,
         schema=ANALYZE_IMAGE_SCHEMA,
     )
     
@@ -88,8 +93,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     
     return True
-    
-    # Define the analyze_image service
+
+# Define the analyze_image service outside of async_setup_entry
 async def handle_analyze_image(hass, call):
     """Handle the analyze_image service call."""
     image_url = call.data.get(ATTR_IMAGE_URL)
@@ -140,35 +145,20 @@ async def handle_analyze_image(hass, call):
         Platform.SENSOR, DOMAIN, sensor_unique_id
     )
     
-    if not entity_id:
-        # Create a new sensor entity
-        from .sensor import OllamaVisionImageSensor
-        new_sensor = OllamaVisionImageSensor(
-            hass, 
-            entry_id_to_use, 
-            image_name, 
-            description, 
-            image_url, 
-            prompt
-        )
-        
-        # Register the entity
-        registry.async_get_or_create(
-            Platform.SENSOR,
-            DOMAIN,
-            sensor_unique_id,
-            suggested_object_id=f"ollama_vision_{image_name}",
-            config_entry_id=entry_id_to_use,
-            device_id=registry.async_get_device_id(
-                DOMAIN, 
-                str((DOMAIN, entry_id_to_use))
-            )
-        )
-        
-        # Set the initial state
-        entity_id = f"sensor.ollama_vision_{image_name}"
-    else:
-        # Update existing sensor state
+    # Store the sensor data for the platform to create
+    if entry_id_to_use not in hass.data[DOMAIN]["pending_sensors"]:
+        hass.data[DOMAIN]["pending_sensors"][entry_id_to_use] = {}
+    
+    # Store the sensor data
+    hass.data[DOMAIN]["pending_sensors"][entry_id_to_use][image_name] = {
+        "description": description,
+        "image_url": image_url,
+        "prompt": prompt,
+        "unique_id": sensor_unique_id
+    }
+    
+    # Update existing sensor state if it exists
+    if entity_id:
         hass.states.async_set(entity_id, description, {
             "friendly_name": f"Ollama Vision {image_name}",
             "icon": "mdi:image-search",
@@ -180,10 +170,16 @@ async def handle_analyze_image(hass, call):
     # Store sensor info
     hass.data[DOMAIN][entry_id_to_use]["sensors"][image_name] = {
         "description": description,
-        "entity_id": entity_id
+        "entity_id": entity_id if entity_id else f"sensor.ollama_vision_{image_name}"
     }
     
-    # Fire event
+    # Trigger an event to notify the sensor platform to create the entity
+    hass.bus.async_fire(f"{DOMAIN}_create_sensor", {
+        "entry_id": entry_id_to_use,
+        "image_name": image_name
+    })
+    
+    # Fire event for external consumers
     hass.bus.async_fire(
         EVENT_IMAGE_ANALYZED, 
         {
@@ -193,7 +189,6 @@ async def handle_analyze_image(hass, call):
             "integration_id": entry_id_to_use
         }
     )
-
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
@@ -208,9 +203,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         
         # Remove data for this entry
         hass.data[DOMAIN].pop(entry.entry_id)
+        if entry.entry_id in hass.data[DOMAIN].get("pending_sensors", {}):
+            hass.data[DOMAIN]["pending_sensors"].pop(entry.entry_id)
     
     return unload_ok
-
 
 async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Reload config entry."""

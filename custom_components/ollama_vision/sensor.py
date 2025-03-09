@@ -5,7 +5,7 @@ import logging
 
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -22,6 +22,35 @@ async def async_setup_entry(
     # Create the info sensor for this configuration entry
     info_sensor = OllamaVisionInfoSensor(hass, entry)
     async_add_entities([info_sensor], True)
+    
+    # Create a listener for new sensor requests
+    @callback
+    def async_create_sensor_from_event(event):
+        """Create a sensor entity from an event."""
+        entry_id = event.data.get("entry_id")
+        image_name = event.data.get("image_name")
+        
+        if (entry_id == entry.entry_id and 
+            entry_id in hass.data[DOMAIN].get("pending_sensors", {}) and
+            image_name in hass.data[DOMAIN]["pending_sensors"][entry_id]):
+            
+            sensor_data = hass.data[DOMAIN]["pending_sensors"][entry_id][image_name]
+            
+            # Create the sensor entity
+            sensor = OllamaVisionImageSensor(
+                hass,
+                entry_id,
+                image_name,
+                sensor_data["description"],
+                sensor_data["image_url"],
+                sensor_data["prompt"]
+            )
+            
+            # Add it to Home Assistant
+            async_add_entities([sensor], True)
+    
+    # Register the event listener
+    hass.bus.async_listen(f"{DOMAIN}_create_sensor", async_create_sensor_from_event)
 
 class OllamaVisionInfoSensor(SensorEntity):
     """Sensor showing information about the Ollama Vision integration."""
