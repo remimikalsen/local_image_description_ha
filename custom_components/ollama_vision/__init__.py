@@ -135,7 +135,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def handle_analyze_image(hass, call):
     """Handle the analyze_image service call."""
     image_url = call.data.get(ATTR_IMAGE_URL)
-    prompt = call.data.get(ATTR_PROMPT)
+    vision_prompt = call.data.get(ATTR_PROMPT, DEFAULT_VISION_PROMPT)
     image_name = call.data.get(ATTR_IMAGE_NAME)
     device_id = call.data.get(ATTR_DEVICE_ID)
     use_text_model = call.data.get(ATTR_USE_TEXT_MODEL, False)
@@ -170,10 +170,13 @@ async def handle_analyze_image(hass, call):
     client_to_use = hass.data[DOMAIN][entry_id_to_use]["client"]
     
     # Analyze the image using the selected client
-    vision_description = await client_to_use.analyze_image(image_url, prompt)
+    vision_description = await client_to_use.analyze_image(image_url, vision_prompt)
     
     if vision_description is None:
         raise HomeAssistantError("Failed to analyze image")
+    
+    if vision_description is None:
+        raise HomeAssistantError("Failed to analyze image")       
     
     # Determine if we should use the text model for elaboration
     config = hass.data[DOMAIN][entry_id_to_use]["config"]
@@ -182,92 +185,38 @@ async def handle_analyze_image(hass, call):
     # Only elaborate if both the service call requests it and the config has it enabled
     final_description = vision_description
     if use_text_model and text_model_enabled:
-        final_description = await client_to_use.elaborate_text(vision_description, text_prompt)
+        text_prompt_formatted = call.data.get(ATTR_TEXT_PROMPT, DEFAULT_TEXT_PROMPT).format(description=vision_description)
+        final_description = await hass.data[DOMAIN][entry_id_to_use]["client"].elaborate_text(vision_description, text_prompt)
     
-    # Create or update sensor
-    sensor_unique_id = f"{DOMAIN}_{entry_id_to_use}_{image_name}"
-    registry = er.async_get(hass)
-    
-    # Check if sensor already exists
-    entity_id = registry.async_get_entity_id(
-        Platform.SENSOR, DOMAIN, sensor_unique_id
-    )
-    
-    # Store the sensor data for the platform to create
-    if "pending_sensors" not in hass.data[DOMAIN]:
-        hass.data[DOMAIN]["pending_sensors"] = {}
-        
-    if entry_id_to_use not in hass.data[DOMAIN]["pending_sensors"]:
-        hass.data[DOMAIN]["pending_sensors"][entry_id_to_use] = {}
-    
-    # Store the sensor data with vision_description as primary description
-    hass.data[DOMAIN]["pending_sensors"][entry_id_to_use][image_name] = {
-        "description": vision_description,  # Use vision output as primary description
+    # Store sensor data persistently
+    pending_sensors = hass.data[DOMAIN].setdefault("pending_sensors", {}).setdefault(entry_id_to_use, {})
+
+    pending_sensors[image_name] = {
+        "description": vision_description,
         "image_url": image_url,
-        "prompt": prompt,
-        "unique_id": sensor_unique_id
+        "prompt": vision_prompt,
+        "unique_id": f"{DOMAIN}_{entry_id_to_use}_{image_name}",
+        "final_description": final_description if use_text_model and text_model_enabled else None,
+        "text_prompt": text_prompt if use_text_model and text_model_enabled else None,
+        "used_text_model": use_text_model and text_model_enabled
     }
 
-    # Add text model data if used
-    if use_text_model and text_model_enabled:
-        hass.data[DOMAIN]["pending_sensors"][entry_id_to_use][image_name]["text_description"] = final_description
-        hass.data[DOMAIN]["pending_sensors"][entry_id_to_use][image_name]["text_prompt"] = text_prompt
-        hass.data[DOMAIN]["pending_sensors"][entry_id_to_use][image_name]["used_text_model"] = True
-    
-    # Update existing sensor state if it exists
-    if entity_id:
+    # Fire event to notify platform to create or update sensor
+    hass.bus.async_fire(f"{DOMAIN}_create_sensor", {
+        "entry_id": entry_id_to_use,
+        "image_name": image_name
+    })
 
-        # Use vision_description as the state (limited to 255 characters)
-        truncated_vision = vision_description[:255] if len(vision_description) > 255 else vision_description
-
-        attributes = {
-            "friendly_name": f"Ollama Vision {image_name}",
-            "icon": "mdi:image-search",
-            "image_url": image_url,
-            "prompt": prompt,
-            "integration_id": entry_id_to_use
-        }
-        
-        # Add text model output as an attribute if it was used
-        if use_text_model and text_model_enabled:
-            attributes["text_description"] = final_description
-            attributes["text_prompt"] = text_prompt
-            attributes["used_text_model"] = True
-        
-        hass.states.async_set(entity_id, truncated_vision, attributes)
-    
-    else:
-        # Trigger an event to notify the sensor platform to create the entity
-        hass.bus.async_fire(f"{DOMAIN}_create_sensor", {
-            "entry_id": entry_id_to_use,
-            "image_name": image_name
-        })        
-    
-    # Store sensor info
-    hass.data[DOMAIN][entry_id_to_use]["sensors"][image_name] = {
-        "description": vision_description,  # Use vision output as primary
-        "entity_id": entity_id if entity_id else f"sensor.ollama_vision_{image_name}"
-    }
-
-    # Add text description if used
-    if use_text_model and text_model_enabled:
-        hass.data[DOMAIN][entry_id_to_use]["sensors"][image_name]["text_description"] = final_description
-
-
-    # Fire event for external consumers
+    # Fire an event for external use
     event_data = {
         "image_name": image_name,
-        "description": vision_description,  # Use vision output as primary
+        "description": vision_description,
         "image_url": image_url,
-        "integration_id": entry_id_to_use
+        "integration_id": entry_id_to_use,
+        "used_text_model": use_text_model and text_model_enabled
     }
 
-    # Add text model data if used
-    if use_text_model and text_model_enabled:
-        event_data["text_description"] = final_description
-        event_data["used_text_model"] = True
-
-    hass.bus.async_fire(EVENT_IMAGE_ANALYZED, event_data)
+    hass.bus.async_fire(EVENT_IMAGE_ANALYZED, event_data)    
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
