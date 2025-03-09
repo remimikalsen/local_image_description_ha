@@ -38,9 +38,14 @@ class OllamaVisionInfoSensor(SensorEntity):
         # Get device info from hass.data
         self._device_info = hass.data[DOMAIN][entry.entry_id]["device_info"]
         
-        # Set initial state
-        self._attr_native_value = entry.entry_id
+        # Set initial state - use model name instead of entry_id
+        host = hass.data[DOMAIN][entry.entry_id]["config"]["host"]
+        model = hass.data[DOMAIN][entry.entry_id]["config"]["model"]
+        self._attr_native_value = f"{model} @ {host}"
+        
+        # Store entry_id in attributes but not as the main value
         self._attr_extra_state_attributes = {
+            "integration_id": entry.entry_id,
             "host": hass.data[DOMAIN][entry.entry_id]["config"]["host"],
             "port": hass.data[DOMAIN][entry.entry_id]["config"]["port"],
             "model": hass.data[DOMAIN][entry.entry_id]["config"]["model"],

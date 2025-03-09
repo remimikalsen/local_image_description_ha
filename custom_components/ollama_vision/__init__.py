@@ -4,12 +4,14 @@ import voluptuous as vol
 import aiohttp
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, ServiceCall, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers import config_validation as cv
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.const import CONF_NAME, Platform
 import homeassistant.helpers.entity_registry as er
+from homeassistant.helpers.device_registry import async_get as async_get_device_registry
+
 
 from .const import (
     DOMAIN,
@@ -78,7 +80,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.services.async_register(
         DOMAIN,
         SERVICE_ANALYZE_IMAGE,
-        handle_analyze_image,
+        lambda call: handle_analyze_image(hass, call),
         schema=ANALYZE_IMAGE_SCHEMA,
     )
     
@@ -88,7 +90,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
     
     # Define the analyze_image service
-async def handle_analyze_image(call: ServiceCall):
+async def handle_analyze_image(hass, call):
     """Handle the analyze_image service call."""
     image_url = call.data.get(ATTR_IMAGE_URL)
     prompt = call.data.get(ATTR_PROMPT)
@@ -99,11 +101,17 @@ async def handle_analyze_image(call: ServiceCall):
     entry_id_to_use = None
     
     if device_id:
-        # Find the entry_id that corresponds to this device_id
-        for entry_id, data in hass.data[DOMAIN].items():
-            if (DOMAIN, entry_id) in data["device_info"]["identifiers"]:
-                entry_id_to_use = entry_id
-                break
+        # Use device registry to find the config entry
+        device_registry = async_get_device_registry(hass)
+        device = device_registry.async_get(device_id)
+        
+        if device and device.config_entries:
+            # Get the first config entry associated with this device
+            # that belongs to our domain
+            for entry_id in device.config_entries:
+                if entry_id in hass.data[DOMAIN]:
+                    entry_id_to_use = entry_id
+                    break
     
     if not entry_id_to_use:
         # If no device_id specified or device_id not found
