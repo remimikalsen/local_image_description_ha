@@ -175,9 +175,6 @@ async def handle_analyze_image(hass, call):
     if vision_description is None:
         raise HomeAssistantError("Failed to analyze image")
     
-    if vision_description is None:
-        raise HomeAssistantError("Failed to analyze image")       
-    
     # Determine if we should use the text model for elaboration
     config = hass.data[DOMAIN][entry_id_to_use]["config"]
     text_model_enabled = config.get(CONF_TEXT_MODEL_ENABLED, False)
@@ -185,8 +182,10 @@ async def handle_analyze_image(hass, call):
     # Only elaborate if both the service call requests it and the config has it enabled
     final_description = vision_description
     if use_text_model and text_model_enabled:
-        text_prompt_formatted = call.data.get(ATTR_TEXT_PROMPT, DEFAULT_TEXT_PROMPT).format(description=vision_description)
-        final_description = await hass.data[DOMAIN][entry_id_to_use]["client"].elaborate_text(vision_description, text_prompt)
+        text_prompt_formatted = text_prompt.format(description=vision_description)
+        final_description = await hass.data[DOMAIN][entry_id_to_use]["client"].elaborate_text(
+            vision_description, text_prompt_formatted
+        )
     
     # Store sensor data persistently
     pending_sensors = hass.data[DOMAIN].setdefault("pending_sensors", {}).setdefault(entry_id_to_use, {})
@@ -196,8 +195,8 @@ async def handle_analyze_image(hass, call):
         "image_url": image_url,
         "prompt": vision_prompt,
         "unique_id": f"{DOMAIN}_{entry_id_to_use}_{image_name}",
-        "final_description": final_description if use_text_model and text_model_enabled else None,
-        "text_prompt": text_prompt if use_text_model and text_model_enabled else None,
+        "final_description": final_description if (use_text_model and text_model_enabled) else None,
+        "text_prompt": text_prompt_formatted if (use_text_model and text_model_enabled) else None,
         "used_text_model": use_text_model and text_model_enabled
     }
 

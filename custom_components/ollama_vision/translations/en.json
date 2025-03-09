@@ -79,7 +79,7 @@
           },
           "text_prompt": {
             "name": "Text Prompt",
-            "description": "Prompt template for the text model. Include \\{description\\} to reference vision results."
+            "description": "Prompt template for the text model. Include {{description}} to reference vision results."
           }
         }
       }
