@@ -13,7 +13,7 @@ analyze_image:
       name: "Vision Prompt"
       description: "Prompt to send to Ollama vision model with the image"
       required: false
-      default: "This image is from a security camera above my front door. If there is a person in focus, describe the gender, estimated age, facial expression (mood), hairstyle, notable facial features, and clothing style clearly and concisely. If not, describe what is there clearly and concisely."
+      default: "This image is from a security camera above my front door. If there are people in the image, describe thir genders, estimated ages, facial expressions (moods), hairstyles, notable facial features, and clothing styles clearly and concisely. If no people are present, describe what is on my porch clearly and concisely."
       selector:
         text:
     image_name:
@@ -24,8 +24,8 @@ analyze_image:
       selector:
         text:
     device_id:
-      name: "Device ID"
-      description: "ID of the specific Ollama Vision device to use"
+      name: "Configuration"
+      description: "Pick the Ollama Vision device to use for this analysis. A device represents a specific vision and text model."
       required: false
       selector:
         device:
@@ -39,7 +39,7 @@ analyze_image:
         boolean:
     text_prompt:
       name: "Text Prompt"
-      description: "Prompt template for the text model. Use \\{description\\} to reference the vision model's output."
+      description: "Prompt template for the text model. See the default template to learn how to reference the vision model's output."
       required: false
       default: "Given the following brief description of what is at my front door: {description}. If it is a person, create a short, humorous roast about their appearance or style. Keep it playful, harmless. If it is something else, describe it. Make it in Norwegian and keep it to less than 300 characters."
       selector:

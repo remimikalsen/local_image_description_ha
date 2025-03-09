@@ -33,7 +33,9 @@ from .const import (
     DEFAULT_TEXT_MODEL,
     CONF_TEXT_KEEPALIVE,
     DEFAULT_KEEPALIVE,
-    CONF_VISION_KEEPALIVE
+    CONF_VISION_KEEPALIVE,
+    DEFAULT_PROMPT,
+    DEFAULT_TEXT_PROMPT
 )
 from .api import OllamaClient
 
@@ -45,11 +47,11 @@ PLATFORMS = [Platform.SENSOR]
 ANALYZE_IMAGE_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_IMAGE_URL): cv.string,
-        vol.Optional(ATTR_PROMPT, default="What do you see?"): cv.string,
+        vol.Optional(ATTR_PROMPT, default=DEFAULT_PROMPT): cv.string,
         vol.Required(ATTR_IMAGE_NAME): cv.string,
         vol.Optional(ATTR_DEVICE_ID): cv.string,
         vol.Optional(ATTR_USE_TEXT_MODEL, default=False): cv.boolean,
-        vol.Optional(ATTR_TEXT_PROMPT, default="What is your name?"): cv.string,
+        vol.Optional(ATTR_TEXT_PROMPT, default=DEFAULT_TEXT_PROMPT): cv.string,
     }
 )
 
@@ -133,11 +135,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def handle_analyze_image(hass, call):
     """Handle the analyze_image service call."""
     image_url = call.data.get(ATTR_IMAGE_URL)
-    vision_prompt = call.data.get(ATTR_PROMPT, "What do you see?")
+    vision_prompt = call.data.get(ATTR_PROMPT, DEFAULT_PROMPT)
     image_name = call.data.get(ATTR_IMAGE_NAME)
     device_id = call.data.get(ATTR_DEVICE_ID)
     use_text_model = call.data.get(ATTR_USE_TEXT_MODEL, False)
-    text_prompt = call.data.get(ATTR_TEXT_PROMPT, "What is your name?")
+    text_prompt = call.data.get(ATTR_TEXT_PROMPT, DEFAULT_TEXT_PROMPT)
     
     # Determine which integration to use based on device_id
     entry_id_to_use = None

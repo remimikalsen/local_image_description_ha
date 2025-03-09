@@ -10,6 +10,7 @@ DEFAULT_KEEPALIVE = -1
 DEFAULT_PORT = 11434
 DEFAULT_MODEL = "moondream"
 CONF_VISION_KEEPALIVE = "vision_keepalive"
+DEFAULT_PROMPT = "This image is from a security camera above my front door. If there are people in the image, describe thir genders, estimated ages, facial expressions (moods), hairstyles, notable facial features, and clothing styles clearly and concisely. If no people are present, describe what is on my porch clearly and concisely."
 
 # Service call constants
 SERVICE_ANALYZE_IMAGE = "analyze_image"
@@ -29,6 +30,7 @@ CONF_TEXT_MODEL = "text_model"
 DEFAULT_TEXT_PORT = 11434
 DEFAULT_TEXT_MODEL = "llama3.1"
 CONF_TEXT_KEEPALIVE = "text_keepalive"
+DEFAULT_TEXT_PROMPT = "Given the following brief description of what is at my front door: {description}. If it is a person, create a short, humorous roast about their appearance or style. Keep it playful, harmless. If it is something else, describe it. Make it in Norwegian and keep it to less than 300 characters."
 
 # Textual model service call constants
 ATTR_USE_TEXT_MODEL = "use_text_model"
