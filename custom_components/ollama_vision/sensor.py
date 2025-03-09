@@ -114,15 +114,15 @@ class OllamaVisionImageSensor(SensorEntity):
             description = sensor_data.get("description")
             self._attr_native_value = description[:255] if description else None
             attributes = {
-                "image_url": sensor_data.get("image_url"),
-                "prompt": sensor_data.get("prompt"),
                 "integration_id": self.entry_id,
+                "image_url": sensor_data.get("image_url"),
+                "prompt": sensor_data.get("prompt"),                
             }
             if sensor_data.get("used_text_model"):
                 attributes.update({
-                    "final_description": sensor_data.get("final_description"),
+                    "used_text_model": True,
                     "text_prompt": sensor_data.get("text_prompt"),
-                    "used_text_model": True
+                    "final_description": sensor_data.get("final_description")
                 })
             self._attr_extra_state_attributes = attributes
             self.async_write_ha_state()
@@ -134,15 +134,15 @@ class OllamaVisionImageSensor(SensorEntity):
             description = sensor_data.get("description")
             self._attr_native_value = description[:255] if description else None
             attributes = {
-                "image_url": sensor_data.get("image_url"),
-                "prompt": sensor_data.get("prompt"),
                 "integration_id": self.entry_id,
+                "image_url": sensor_data.get("image_url"),
+                "prompt": sensor_data.get("prompt")                
             }
             if sensor_data.get("used_text_model"):
                 attributes.update({
-                    "final_description": sensor_data.get("final_description"),
+                    "used_text_model": True,
                     "text_prompt": sensor_data.get("text_prompt"),
-                    "used_text_model": True
+                    "final_description": sensor_data.get("final_description")                    
                 })
             self._attr_extra_state_attributes = attributes
 

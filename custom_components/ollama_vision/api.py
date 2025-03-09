@@ -50,7 +50,11 @@ class OllamaClient:
                         "stream": False,
                         "keep_alive": self.vision_keepalive
                     }
-                    
+
+                    _LOGGER.error("Vision model is: %s", self.model)
+                    _LOGGER.error("Vision api is: %s", self.api_base_url)
+                    _LOGGER.error("Vision prompt is: %s", prompt)
+
                     # Send the request to Ollama generate endpoint
                     async with session.post(f"{self.api_base_url}/generate", json=payload) as gen_response:
                         if gen_response.status != 200:
@@ -83,6 +87,10 @@ class OllamaClient:
                 "stream": False,
                 "keep_alive": self.vision_keepalive
             }
+            
+            _LOGGER.error("Text model is: %s", self.text_model)
+            _LOGGER.error("Text api is: %s", self.text_api_base_url)
+            _LOGGER.error("Text prompt is: %s", prompt)
             
             async with aiohttp.ClientSession() as session:
                 async with session.post(f"{self.text_api_base_url}/generate", json=payload) as gen_response:

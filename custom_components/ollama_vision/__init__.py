@@ -181,40 +181,40 @@ async def handle_analyze_image(hass, call):
     
     # Only elaborate if both the service call requests it and the config has it enabled
     final_description = vision_description
+    text_prompt_formatted = None
     if use_text_model and text_model_enabled:
         text_prompt_formatted = text_prompt.format(description=vision_description)
-        final_description = await hass.data[DOMAIN][entry_id_to_use]["client"].elaborate_text(
-            vision_description, text_prompt_formatted
-        )
+        final_description = await client_to_use.elaborate_text(vision_description, text_prompt_formatted)
     
-    # Store sensor data persistently
+    # Store data so the sensor can display it
     pending_sensors = hass.data[DOMAIN].setdefault("pending_sensors", {}).setdefault(entry_id_to_use, {})
-
     pending_sensors[image_name] = {
         "description": vision_description,
         "image_url": image_url,
         "prompt": vision_prompt,
         "unique_id": f"{DOMAIN}_{entry_id_to_use}_{image_name}",
         "final_description": final_description if (use_text_model and text_model_enabled) else None,
-        "text_prompt": text_prompt_formatted if (use_text_model and text_model_enabled) else None,
+        "text_prompt": text_prompt_formatted,
         "used_text_model": use_text_model and text_model_enabled
     }
 
-    # Fire event to notify platform to create or update sensor
+    # Fire event for sensor creation/update
     hass.bus.async_fire(f"{DOMAIN}_create_sensor", {
         "entry_id": entry_id_to_use,
         "image_name": image_name
     })
 
-    # Fire an event for external use
+    # Fire user-facing event with all relevant fields
     event_data = {
-        "image_name": image_name,
-        "description": vision_description,
-        "image_url": image_url,
         "integration_id": entry_id_to_use,
-        "used_text_model": use_text_model and text_model_enabled
+        "image_name": image_name,
+        "image_url": image_url,
+        "prompt": vision_prompt,
+        "description": vision_description,
+        "used_text_model": use_text_model and text_model_enabled,
+        "text_prompt": text_prompt_formatted,
+        "final_description": final_description,
     }
-
     hass.bus.async_fire(EVENT_IMAGE_ANALYZED, event_data)    
 
 
