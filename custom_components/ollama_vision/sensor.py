@@ -40,8 +40,8 @@ async def async_setup_entry(
         created_sensors = hass.data[DOMAIN].setdefault("created_sensors", {})
         
         if sensor_unique_id in created_sensors:
-            # Sensor already exists: trigger a state update
-            created_sensors[sensor_unique_id].async_schedule_update_ha_state(True)
+            # Sensor already exists: trigger a direct update
+            created_sensors[sensor_unique_id].async_schedule_update()
         else:
             # Create and register a new sensor entity
             sensor = OllamaVisionImageSensor(hass, entry_id, image_name)
@@ -91,28 +91,50 @@ class OllamaVisionImageSensor(SensorEntity):
         self._attr_unique_id = f"{DOMAIN}_{entry_id}_{image_name}"
         self._attr_name = f"Ollama Vision {image_name}"
         self._attr_icon = "mdi:image-search"
-
-    async def async_update(self):
+        self._attr_native_value = None
+        self._attr_extra_state_attributes = {}
+        
+    @callback
+    def async_schedule_update(self):
+        """Update the entity when new data is received."""
         sensor_data = self.hass.data[DOMAIN]["pending_sensors"].get(self.entry_id, {}).get(self.image_name, {})
         if sensor_data:
             description = sensor_data.get("description")
             self._attr_native_value = description[:255] if description else None
-
             attributes = {
                 "image_url": sensor_data.get("image_url"),
                 "prompt": sensor_data.get("prompt"),
                 "integration_id": self.entry_id,
             }
-
             if sensor_data.get("used_text_model"):
                 attributes.update({
                     "final_description": sensor_data.get("final_description"),
                     "text_prompt": sensor_data.get("text_prompt"),
                     "used_text_model": True
                 })
-
             self._attr_extra_state_attributes = attributes
-
+            self.async_write_ha_state()
+    
+    async def async_update(self):
+        """Fetch new state data for the sensor."""
+        # This method is used during initialization and periodic updates
+        sensor_data = self.hass.data[DOMAIN]["pending_sensors"].get(self.entry_id, {}).get(self.image_name, {})
+        if sensor_data:
+            description = sensor_data.get("description")
+            self._attr_native_value = description[:255] if description else None
+            attributes = {
+                "image_url": sensor_data.get("image_url"),
+                "prompt": sensor_data.get("prompt"),
+                "integration_id": self.entry_id,
+            }
+            if sensor_data.get("used_text_model"):
+                attributes.update({
+                    "final_description": sensor_data.get("final_description"),
+                    "text_prompt": sensor_data.get("text_prompt"),
+                    "used_text_model": True
+                })
+            self._attr_extra_state_attributes = attributes
+            
     @property
     def device_info(self):
         return self.hass.data[DOMAIN][self.entry_id]["device_info"]
