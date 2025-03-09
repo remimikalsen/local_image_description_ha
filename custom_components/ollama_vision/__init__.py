@@ -125,11 +125,32 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         async_handle_service,
         schema=ANALYZE_IMAGE_SCHEMA,
     )
+
+    # Check if the text model is enabled and remove the sensor if it exists and the model is disabled
+    if not text_model_enabled:
+        ent_registry = er.async_get(hass)
+        text_sensor_entity_id = ent_registry.async_get_entity_id(
+            domain="sensor",
+            platform=DOMAIN,  # The platform name as in sensor.py
+            unique_id=f"{DOMAIN}_{entry.entry_id}_text_info",
+        )
+        if text_sensor_entity_id:
+            # Remove it, so it disappears from Home Assistant entirely
+            ent_registry.async_remove(text_sensor_entity_id)
+
+    # Create update listener
+    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     
     # Set up platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     
     return True
+
+
+async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Handle options update."""
+    await hass.config_entries.async_reload(entry.entry_id)
+
 
 # Define the analyze_image service outside of async_setup_entry
 async def handle_analyze_image(hass, call):
