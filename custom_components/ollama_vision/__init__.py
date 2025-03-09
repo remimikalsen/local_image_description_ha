@@ -17,7 +17,6 @@ from .const import (
     CONF_HOST,
     CONF_PORT,
     CONF_MODEL,
-    DEFAULT_VISION_PROMPT,
     ATTR_IMAGE_URL,
     ATTR_PROMPT,
     ATTR_IMAGE_NAME,
@@ -26,7 +25,6 @@ from .const import (
     EVENT_IMAGE_ANALYZED,
     ATTR_USE_TEXT_MODEL,
     ATTR_TEXT_PROMPT,
-    DEFAULT_TEXT_PROMPT,
     CONF_TEXT_MODEL_ENABLED,
     CONF_TEXT_HOST,
     CONF_TEXT_PORT,
@@ -47,11 +45,11 @@ PLATFORMS = [Platform.SENSOR]
 ANALYZE_IMAGE_SCHEMA = vol.Schema(
     {
         vol.Required(ATTR_IMAGE_URL): cv.string,
-        vol.Optional(ATTR_PROMPT, default=DEFAULT_VISION_PROMPT): cv.string,
+        vol.Optional(ATTR_PROMPT, default="What do you see?"): cv.string,
         vol.Required(ATTR_IMAGE_NAME): cv.string,
         vol.Optional(ATTR_DEVICE_ID): cv.string,
         vol.Optional(ATTR_USE_TEXT_MODEL, default=False): cv.boolean,
-        vol.Optional(ATTR_TEXT_PROMPT, default=DEFAULT_TEXT_PROMPT): cv.string,
+        vol.Optional(ATTR_TEXT_PROMPT, default="What is your name?"): cv.string,
     }
 )
 
@@ -135,11 +133,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def handle_analyze_image(hass, call):
     """Handle the analyze_image service call."""
     image_url = call.data.get(ATTR_IMAGE_URL)
-    vision_prompt = call.data.get(ATTR_PROMPT, DEFAULT_VISION_PROMPT)
+    vision_prompt = call.data.get(ATTR_PROMPT, "What do you see?")
     image_name = call.data.get(ATTR_IMAGE_NAME)
     device_id = call.data.get(ATTR_DEVICE_ID)
     use_text_model = call.data.get(ATTR_USE_TEXT_MODEL, False)
-    text_prompt = call.data.get(ATTR_TEXT_PROMPT, DEFAULT_TEXT_PROMPT)
+    text_prompt = call.data.get(ATTR_TEXT_PROMPT, "What is your name?")
     
     # Determine which integration to use based on device_id
     entry_id_to_use = None

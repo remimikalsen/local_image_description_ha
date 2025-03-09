@@ -13,7 +13,7 @@ analyze_image:
       name: "Vision Prompt"
       description: "Prompt to send to Ollama vision model with the image"
       required: false
-      default: "Describe what you see in this image clearly and concisely."
+      default: "What do you see? Describe it in a few words."
       selector:
         text:
     image_name:
@@ -41,6 +41,6 @@ analyze_image:
       name: "Text Prompt"
       description: "Prompt template for the text model. Use {{description}} to reference the vision model's output."
       required: false
-      default: "Elaborate on this image description: {description}. Make it detailed and descriptive."
+      default: "Given the following: {description}. Elaborate on it with less than 300 words using flowery language."
       selector:
         text: 
