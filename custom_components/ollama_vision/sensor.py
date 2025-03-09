@@ -34,9 +34,19 @@ async def async_setup_entry(
     def async_create_sensor_from_event(event):
         entry_id = event.data.get("entry_id")
         image_name = event.data.get("image_name")
-
-        sensor = OllamaVisionImageSensor(hass, entry_id, image_name)
-        async_add_entities([sensor], True)
+        sensor_unique_id = f"{DOMAIN}_{entry_id}_{image_name}"
+        
+        # Initialize or get the dict to track created sensors
+        created_sensors = hass.data[DOMAIN].setdefault("created_sensors", {})
+        
+        if sensor_unique_id in created_sensors:
+            # Sensor already exists: trigger a state update
+            created_sensors[sensor_unique_id].async_schedule_update_ha_state(True)
+        else:
+            # Create and register a new sensor entity
+            sensor = OllamaVisionImageSensor(hass, entry_id, image_name)
+            async_add_entities([sensor], True)
+            created_sensors[sensor_unique_id] = sensor
 
     hass.bus.async_listen(f"{DOMAIN}_create_sensor", async_create_sensor_from_event)
 

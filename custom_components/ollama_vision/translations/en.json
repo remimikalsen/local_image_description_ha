@@ -62,9 +62,8 @@
             "description": "URL of the image to analyze"
           },
           "prompt": {
-            "name": "Vision Prompt",
-            "description": "Prompt sent to the Ollama vision model",
-            "default": "This image is from a security camera above my front door. If there is a person in focus, describe the gender, estimated age, facial expression (mood), hairstyle, notable facial features, and clothing style clearly and concisely. If not, describe what is there clearly and concisely."
+            "name": "Vision Prompt!!!",
+            "description": "Prompt sent to the Ollama vision model"
           },
           "image_name": {
             "name": "Image Name",
@@ -80,8 +79,7 @@
           },
           "text_prompt": {
             "name": "Text Prompt",
-            "description": "Prompt template for the text model. Include {{description}} to reference vision results.",
-            "default": "Given the following brief description of what is at my front door: {description}. If it is a person, create a short, humorous roast about their appearance or style. Keep it playful, harmless. If it is something else, describe it. Make it in Norwegian and keep it to less than 300 characters."
+            "description": "Prompt template for the text model. Include {description} to reference vision results."
           }
         }
       }
