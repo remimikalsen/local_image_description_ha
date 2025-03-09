@@ -17,7 +17,6 @@ SERVICE_ANALYZE_IMAGE = "analyze_image"
 ATTR_IMAGE_URL = "image_url"
 ATTR_PROMPT = "prompt"
 ATTR_IMAGE_NAME = "image_name"
-ATTR_INTEGRATION_ID = "integration_id"
 ATTR_DEVICE_ID = "device_id"
 
 # Event constants

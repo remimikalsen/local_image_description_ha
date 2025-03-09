@@ -8,13 +8,20 @@
             "name": "Name",
             "host": "Host",
             "port": "Port",
-            "model": "Ollama Vision Model"
+            "model": "Vision Model",
+            "vision_keepalive": "Vision Model Keep-Alive (-1 for indefinite)",
+            "text_model_enabled": "Enable Text Model",
+            "text_host": "Text Model Host",
+            "text_port": "Text Model Port",
+            "text_model": "Text Model",
+            "text_keepalive": "Text Model Keep-Alive (-1 for indefinite)"
           }
         }
       },
       "error": {
         "cannot_connect": "Failed to connect to Ollama",
-        "unknown": "Unexpected error"
+        "unknown": "Unexpected error",
+        "required": "This field is required"
       },
       "abort": {
         "already_configured": "Ollama is already configured"
@@ -23,14 +30,53 @@
     "options": {
       "step": {
         "init": {
-          "title": "Ollama Vision Options",
+          "title": "Ollama Vision options",
           "description": "Update your Ollama connection settings",
           "data": {
-            "host": "Host",
-            "port": "Port",
-            "model": "Ollama Vision Model"
+            "host": "Vision model host",
+            "port": "Vision model port",
+            "model": "Vision model",
+            "vision_keepalive": "Vision model keep-alive (-1 for indefinite)",
+            "text_model_enabled": "Enable text model",
+            "text_host": "Text model host",
+            "text_port": "Text model port",
+            "text_model": "Text model",
+            "text_keepalive": "Text model keep-alive (-1 for indefinite)"
+          }
+        }
+      }
+    },
+    "services": {
+      "analyze_image": {
+        "name": "Analyze Image",
+        "description": "Send an image to Ollama for analysis and create a sensor with the result. Optionally elaborate the description with a text model.",
+        "fields": {
+          "image_url": {
+            "name": "Image URL",
+            "description": "URL of the image to analyze"
+          },
+          "prompt": {
+            "name": "Vision Prompt",
+            "description": "Prompt to send to Ollama vision model with the image"
+          },
+          "image_name": {
+            "name": "Image Name",
+            "description": "Unique name for this image (used for sensor naming)"
+          },
+          "device_id": {
+            "name": "Device ID",
+            "description": "ID of the specific Ollama Vision device to use"
+          },
+          "use_text_model": {
+            "name": "Use Text Model",
+            "description": "Whether to use the text model to elaborate on the vision model's description"
+          },
+          "text_prompt": {
+            "name": "Text Prompt",
+            "description": "Prompt template for the text model. Use {description} to reference the vision model's output."
           }
         }
       }
     }
   }
+  

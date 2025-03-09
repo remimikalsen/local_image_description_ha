@@ -95,22 +95,27 @@ class OllamaVisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     errors["base"] = "unknown"
 
         # Show form for user input
+        data_schema = vol.Schema({
+            vol.Required(CONF_NAME): str,
+            vol.Required(CONF_HOST): str,
+            vol.Required(CONF_PORT, default=DEFAULT_PORT): int,
+            vol.Required(CONF_MODEL, default=DEFAULT_MODEL): str,
+            vol.Required(CONF_VISION_KEEPALIVE, default=DEFAULT_KEEPALIVE): int,
+            vol.Optional(CONF_TEXT_MODEL_ENABLED, default=False): bool,
+        })
+        
+        # Add text model fields conditionally if text model is enabled
+        if user_input and user_input.get(CONF_TEXT_MODEL_ENABLED):
+            data_schema = data_schema.extend({
+                vol.Required(CONF_TEXT_HOST): str,
+                vol.Required(CONF_TEXT_PORT, default=DEFAULT_TEXT_PORT): int,
+                vol.Required(CONF_TEXT_MODEL, default=DEFAULT_TEXT_MODEL): str,
+                vol.Required(CONF_TEXT_KEEPALIVE, default=DEFAULT_KEEPALIVE): int,
+            })
+        
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(CONF_NAME): str,
-                    vol.Required(CONF_HOST): str,
-                    vol.Required(CONF_PORT, default=DEFAULT_PORT): int,
-                    vol.Required(CONF_MODEL, default=DEFAULT_MODEL): str,
-                    vol.Required(CONF_VISION_KEEPALIVE, default=DEFAULT_KEEPALIVE): int,
-                    vol.Optional(CONF_TEXT_MODEL_ENABLED, default=False): bool,
-                    vol.Optional(CONF_TEXT_HOST): str,
-                    vol.Optional(CONF_TEXT_PORT, default=DEFAULT_TEXT_PORT): int,
-                    vol.Optional(CONF_TEXT_MODEL, default=DEFAULT_TEXT_MODEL): str,
-                    vol.Optional(CONF_TEXT_KEEPALIVE, default=DEFAULT_KEEPALIVE): int,
-                }
-            ),
+            data_schema=data_schema,
             errors=errors,
         )
 
@@ -136,47 +141,53 @@ class OllamaVisionOptionsFlow(config_entries.OptionsFlow):
         options = self.config_entry.options
         data = self.config_entry.data
         
+        # Base schema with vision model settings
+        schema = {
+            vol.Required(
+                CONF_HOST, 
+                default=options.get(CONF_HOST, data.get(CONF_HOST))
+            ): str,
+            vol.Required(
+                CONF_PORT, 
+                default=options.get(CONF_PORT, data.get(CONF_PORT, DEFAULT_PORT))
+            ): int,
+            vol.Required(
+                CONF_MODEL, 
+                default=options.get(CONF_MODEL, data.get(CONF_MODEL, DEFAULT_MODEL))
+            ): str,
+            vol.Required(
+                CONF_VISION_KEEPALIVE,
+                default=options.get(CONF_VISION_KEEPALIVE, data.get(CONF_VISION_KEEPALIVE, DEFAULT_KEEPALIVE))
+            ): int,
+            vol.Optional(
+                CONF_TEXT_MODEL_ENABLED,
+                default=options.get(CONF_TEXT_MODEL_ENABLED, data.get(CONF_TEXT_MODEL_ENABLED, False))
+            ): bool,
+        }
+        
+        # Add text model fields if enabled
+        text_enabled = options.get(CONF_TEXT_MODEL_ENABLED, data.get(CONF_TEXT_MODEL_ENABLED, False))
+        if text_enabled:
+            schema.update({
+                vol.Required(
+                    CONF_TEXT_HOST,
+                    default=options.get(CONF_TEXT_HOST, data.get(CONF_TEXT_HOST, ""))
+                ): str,
+                vol.Required(
+                    CONF_TEXT_PORT,
+                    default=options.get(CONF_TEXT_PORT, data.get(CONF_TEXT_PORT, DEFAULT_TEXT_PORT))
+                ): int,
+                vol.Required(
+                    CONF_TEXT_MODEL,
+                    default=options.get(CONF_TEXT_MODEL, data.get(CONF_TEXT_MODEL, DEFAULT_TEXT_MODEL))
+                ): str,
+                vol.Required(
+                    CONF_TEXT_KEEPALIVE,
+                    default=options.get(CONF_TEXT_KEEPALIVE, data.get(CONF_TEXT_KEEPALIVE, DEFAULT_KEEPALIVE))
+                ): int,
+            })
+        
         return self.async_show_form(
             step_id="init",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(
-                        CONF_HOST, 
-                        default=options.get(CONF_HOST, data.get(CONF_HOST))
-                    ): str,
-                    vol.Required(
-                        CONF_PORT, 
-                        default=options.get(CONF_PORT, data.get(CONF_PORT, DEFAULT_PORT))
-                    ): int,
-                    vol.Required(
-                        CONF_MODEL, 
-                        default=options.get(CONF_MODEL, data.get(CONF_MODEL, DEFAULT_MODEL))
-                    ): str,
-                    vol.Required(
-                        CONF_VISION_KEEPALIVE,
-                        default=options.get(CONF_VISION_KEEPALIVE, data.get(CONF_VISION_KEEPALIVE, DEFAULT_KEEPALIVE))
-                    ): int,
-                    vol.Optional(
-                        CONF_TEXT_MODEL_ENABLED,
-                        default=options.get(CONF_TEXT_MODEL_ENABLED, data.get(CONF_TEXT_MODEL_ENABLED, False))
-                    ): bool,
-                    vol.Optional(
-                        CONF_TEXT_HOST,
-                        default=options.get(CONF_TEXT_HOST, data.get(CONF_TEXT_HOST, ""))
-                    ): str,
-                    vol.Optional(
-                        CONF_TEXT_PORT,
-                        default=options.get(CONF_TEXT_PORT, data.get(CONF_TEXT_PORT, DEFAULT_TEXT_PORT))
-                    ): int,
-                    vol.Optional(
-                        CONF_TEXT_MODEL,
-                        default=options.get(CONF_TEXT_MODEL, data.get(CONF_TEXT_MODEL, DEFAULT_TEXT_MODEL))
-                    ): str,
-                    vol.Optional(
-                        CONF_TEXT_KEEPALIVE,
-                        default=options.get(CONF_TEXT_KEEPALIVE, data.get(CONF_TEXT_KEEPALIVE, DEFAULT_KEEPALIVE))
-                    ): int,
-                }
-            ),
+            data_schema=vol.Schema(schema),
         )
-

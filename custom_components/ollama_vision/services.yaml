@@ -1,44 +1,44 @@
 analyze_image:
-  name: Analyze Image
+  name: "Analyze Image"
   description: "Send an image to Ollama for analysis and create a sensor with the result. Optionally elaborate the description with a text model."
   fields:
     image_url:
-      name: Image URL
-      description: URL of the image to analyze
+      name: "Image URL"
+      description: "URL of the image to analyze"
       required: true
       example: "https://example.com/image.jpg"
       selector:
         text:
     prompt:
-      name: Prompt
-      description: Prompt to send to Ollama vision model with the image
+      name: "Vision Prompt"
+      description: "Prompt to send to Ollama vision model with the image"
       required: false
       default: "Describe what you see in this image clearly and concisely."
       selector:
         text:
     image_name:
-      name: Image Name
-      description: Unique name for this image (used for sensor naming)
+      name: "Image Name"
+      description: "Unique name for this image (used for sensor naming)"
       required: true
       example: "front_door_camera"
       selector:
         text:
     device_id:
-      name: Device ID
-      description: ID of the specific Ollama Vision device to use
+      name: "Device ID"
+      description: "ID of the specific Ollama Vision device to use"
       required: false
       selector:
         device:
           integration: ollama_vision
     use_text_model:
-      name: Use Text Model
-      description: Whether to use the text model to elaborate on the vision model's description
+      name: "Use Text Model"
+      description: "Whether to use the text model to elaborate on the vision model's description"
       required: false
       default: false
       selector:
         boolean:
     text_prompt:
-      name: Text Prompt
+      name: "Text Prompt"
       description: "Prompt template for the text model. Use {description} to reference the vision model's output."
       required: false
       default: "Elaborate on this image description: {description}. Make it detailed and descriptive."

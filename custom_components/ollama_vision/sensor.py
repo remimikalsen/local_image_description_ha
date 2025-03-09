@@ -20,7 +20,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up the Ollama Vision sensors."""
     # Create the info sensor for this configuration entry
-    info_sensor = OllamaVisionInfoSensor(hass, entry)
+    vision_info_sensor = OllamaVisionInfoSensor(hass, entry)
     entities = [vision_info_sensor]
     
     # Create text model info sensor if text model is enabled
