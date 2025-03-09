@@ -83,14 +83,19 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           sha: ${{ steps.sha_resolver.outputs.TRUE_SHA }}
 
-      - name: Update VERSION file and commit coverage artifacts
+      - name: Update VERSION and MANIFEST file and commit
         run: |
+
+          sed -i 's/"version": "[^"]*"/"version": "'${{ env.VERSION }}'"/' custom_components/ollama_vision/manifest.json
+
           echo "${{ env.VERSION }}" > VERSION
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@ollama_vision"
 
+          git add custom_components/ollama_vision/manifest.json
           git add VERSION
-          git commit -m "ci: update VERSION file to ${{ env.VERSION }} [skip ci]"
+          
+          git commit -m "ci: update VERSION and manifest file to ${{ env.VERSION }} [skip ci]"
 
           git push origin main
 
