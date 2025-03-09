@@ -41,6 +41,6 @@ analyze_image:
       name: "Text Prompt"
       description: "Prompt template for the text model. See the default template to learn how to reference the vision model's output."
       required: false
-      default: "Given the following brief description of what is at my front door: {description}. If it is a person, create a short, humorous roast about their appearance or style. Keep it playful, harmless. If it is something else, describe it. Make it in Norwegian and keep it to less than 300 characters."
+      default: "Given the following brief description of what is at my front door: {description}. If it is a person, create a short, humorous roast about their appearance or style. Keep it playful, harmless. If it is something else, describe it. Make it in Norwegian and keep it to less than 300 characters and to the point on what I'm asking."
       selector:
         text: 
