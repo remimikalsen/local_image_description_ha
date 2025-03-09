@@ -1,6 +1,6 @@
 analyze_image:
   name: Analyze Image
-  description: "Send an image to Ollama for analysis and create a sensor with the result."
+  description: "Send an image to Ollama for analysis and create a sensor with the result. Optionally elaborate the description with a text model."
   fields:
     image_url:
       name: Image URL
@@ -11,9 +11,9 @@ analyze_image:
         text:
     prompt:
       name: Prompt
-      description: Prompt to send to Ollama with the image
-      required: true
-      example: "Describe what you see in this image in detail"
+      description: Prompt to send to Ollama vision model with the image
+      required: false
+      default: "Describe what you see in this image clearly and concisely."
       selector:
         text:
     image_name:
@@ -27,7 +27,20 @@ analyze_image:
       name: Device ID
       description: ID of the specific Ollama Vision device to use
       required: false
-      example: "ollama_vision_living_room"
       selector:
         device:
           integration: ollama_vision
+    use_text_model:
+      name: Use Text Model
+      description: Whether to use the text model to elaborate on the vision model's description
+      required: false
+      default: false
+      selector:
+        boolean:
+    text_prompt:
+      name: Text Prompt
+      description: "Prompt template for the text model. Use {description} to reference the vision model's output."
+      required: false
+      default: "Elaborate on this image description: {description}. Make it detailed and descriptive."
+      selector:
+        text:

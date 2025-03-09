@@ -14,6 +14,12 @@ from .const import (
     CONF_MODEL,
     DEFAULT_PORT,
     DEFAULT_MODEL,
+    CONF_TEXT_MODEL_ENABLED,
+    CONF_TEXT_HOST,
+    CONF_TEXT_PORT,
+    CONF_TEXT_MODEL,
+    DEFAULT_TEXT_PORT,
+    DEFAULT_TEXT_MODEL,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -29,24 +35,61 @@ class OllamaVisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors = {}
 
         if user_input is not None:
-            # Test connection to Ollama
-            try:
-                session = aiohttp.ClientSession()
-                api_url = f"http://{user_input[CONF_HOST]}:{user_input[CONF_PORT]}/api/version"
-                async with session.get(api_url) as response:
-                    if response.status == 200:
+            # If text model is enabled, ensure all text model fields are provided
+            if user_input.get(CONF_TEXT_MODEL_ENABLED):
+                if not user_input.get(CONF_TEXT_HOST):
+                    errors["text_host"] = "required"
+                else:
+                    # Test connection to both Ollama instances
+                    try:
+                        failed = False
+                        session = aiohttp.ClientSession()
+                        api_url = f"http://{user_input[CONF_HOST]}:{user_input[CONF_PORT]}/api/version"
+                        async with session.get(api_url) as response:
+                            if response.status != 200:
+                                errors["base"] = "cannot_connect"
+                                failed = True
+
+                        api_url = f"http://{user_input[CONF_TEXT_HOST]}:{user_input[CONF_TEXT_PORT]}/api/version"
+                        async with session.get(api_url) as response:
+                            if response.status != 200:
+                                errors["base"] = "cannot_connect"
+                                failed = True
+                        
                         await session.close()
-                        return self.async_create_entry(
+                        
+                        if not failed:
+                            return self.async_create_entry(
                             title=user_input[CONF_NAME],
-                            data=user_input
-                        )
+                                data=user_input
+                            )
+                        
+                    except aiohttp.ClientError:
+                        errors["base"] = "cannot_connect"
+                    except Exception:  # pylint: disable=broad-except
+                        _LOGGER.exception("Unexpected exception")
+                        errors["base"] = "unknown"
+
+            else:
+                # Test connection to Ollama
+                try:
+                    session = aiohttp.ClientSession()
+                    api_url = f"http://{user_input[CONF_HOST]}:{user_input[CONF_PORT]}/api/version"
+                    async with session.get(api_url) as response:
+                        if response.status == 200:
+                            await session.close()
+
+                            return self.async_create_entry(
+                                title=user_input[CONF_NAME],
+                                data=user_input
+                            )
+                        errors["base"] = "cannot_connect"
+                    await session.close()
+                except aiohttp.ClientError:
                     errors["base"] = "cannot_connect"
-                await session.close()
-            except aiohttp.ClientError:
-                errors["base"] = "cannot_connect"
-            except Exception:  # pylint: disable=broad-except
-                _LOGGER.exception("Unexpected exception")
-                errors["base"] = "unknown"
+                except Exception:  # pylint: disable=broad-except
+                    _LOGGER.exception("Unexpected exception")
+                    errors["base"] = "unknown"
 
         # Show form for user input
         return self.async_show_form(
@@ -57,6 +100,10 @@ class OllamaVisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required(CONF_HOST): str,
                     vol.Required(CONF_PORT, default=DEFAULT_PORT): int,
                     vol.Required(CONF_MODEL, default=DEFAULT_MODEL): str,
+                    vol.Optional(CONF_TEXT_MODEL_ENABLED, default=False): bool,
+                    vol.Optional(CONF_TEXT_HOST): str,
+                    vol.Optional(CONF_TEXT_PORT, default=DEFAULT_TEXT_PORT): int,
+                    vol.Optional(CONF_TEXT_MODEL, default=DEFAULT_TEXT_MODEL): str,
                 }
             ),
             errors=errors,
@@ -77,27 +124,46 @@ class OllamaVisionOptionsFlow(config_entries.OptionsFlow):
         self.config_entry = config_entry
 
     async def async_step_init(self, user_input=None):
-        """Handle options flow."""
-        if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
+    """Handle options flow."""
+    if user_input is not None:
+        return self.async_create_entry(title="", data=user_input)
 
-        options = self.config_entry.options
-        return self.async_show_form(
-            step_id="init",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(
-                        CONF_HOST, 
-                        default=options.get(CONF_HOST, self.config_entry.data.get(CONF_HOST))
-                    ): str,
-                    vol.Required(
-                        CONF_PORT, 
-                        default=options.get(CONF_PORT, self.config_entry.data.get(CONF_PORT, DEFAULT_PORT))
-                    ): int,
-                    vol.Required(
-                        CONF_MODEL, 
-                        default=options.get(CONF_MODEL, self.config_entry.data.get(CONF_MODEL, DEFAULT_MODEL))
-                    ): str,
-                }
-            ),
-        )
+    options = self.config_entry.options
+    data = self.config_entry.data
+    
+    return self.async_show_form(
+        step_id="init",
+        data_schema=vol.Schema(
+            {
+                vol.Required(
+                    CONF_HOST, 
+                    default=options.get(CONF_HOST, data.get(CONF_HOST))
+                ): str,
+                vol.Required(
+                    CONF_PORT, 
+                    default=options.get(CONF_PORT, data.get(CONF_PORT, DEFAULT_PORT))
+                ): int,
+                vol.Required(
+                    CONF_MODEL, 
+                    default=options.get(CONF_MODEL, data.get(CONF_MODEL, DEFAULT_MODEL))
+                ): str,
+                vol.Optional(
+                    CONF_TEXT_MODEL_ENABLED,
+                    default=options.get(CONF_TEXT_MODEL_ENABLED, data.get(CONF_TEXT_MODEL_ENABLED, False))
+                ): bool,
+                vol.Optional(
+                    CONF_TEXT_HOST,
+                    default=options.get(CONF_TEXT_HOST, data.get(CONF_TEXT_HOST, ""))
+                ): str,
+                vol.Optional(
+                    CONF_TEXT_PORT,
+                    default=options.get(CONF_TEXT_PORT, data.get(CONF_TEXT_PORT, DEFAULT_TEXT_PORT))
+                ): int,
+                vol.Optional(
+                    CONF_TEXT_MODEL,
+                    default=options.get(CONF_TEXT_MODEL, data.get(CONF_TEXT_MODEL, DEFAULT_TEXT_MODEL))
+                ): str,
+            }
+        ),
+    )
+

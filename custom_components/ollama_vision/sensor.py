@@ -100,6 +100,9 @@ class OllamaVisionImageSensor(SensorEntity):
         self._attr_name = f"Ollama Vision {image_name}"
         self._attr_icon = "mdi:image-search"
         
+        # Get sensor data from pending_sensors
+        sensor_data = hass.data[DOMAIN].get("pending_sensors", {}).get(entry_id, {}).get(image_name, {})
+        
         # Set state and attributes
         self._attr_native_value = description
         self._attr_extra_state_attributes = {
@@ -107,6 +110,16 @@ class OllamaVisionImageSensor(SensorEntity):
             "prompt": prompt,
             "integration_id": entry_id
         }
+        
+        # Add additional attributes if available
+        if "vision_description" in sensor_data:
+            self._attr_extra_state_attributes["vision_description"] = sensor_data["vision_description"]
+        
+        if "text_prompt" in sensor_data and sensor_data["text_prompt"]:
+            self._attr_extra_state_attributes["text_prompt"] = sensor_data["text_prompt"]
+            
+        if "used_text_model" in sensor_data:
+            self._attr_extra_state_attributes["used_text_model"] = sensor_data["used_text_model"]
         
         # Get device info from hass.data
         self._device_info = hass.data[DOMAIN][entry_id]["device_info"]
