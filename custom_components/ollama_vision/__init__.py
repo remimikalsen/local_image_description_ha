@@ -70,7 +70,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     vision_keepalive = entry.data.get(CONF_VISION_KEEPALIVE) or entry.options.get(CONF_VISION_KEEPALIVE, DEFAULT_KEEPALIVE)
     
     # Get text model settings
-    text_model_enabled = entry.data.get(CONF_TEXT_MODEL_ENABLED) or entry.options.get(CONF_TEXT_MODEL_ENABLED, False)
+    text_model_enabled = entry.options.get(
+        CONF_TEXT_MODEL_ENABLED, 
+        entry.data.get(CONF_TEXT_MODEL_ENABLED, False)
+    )
     text_host = None
     text_port = None
     text_model = None
