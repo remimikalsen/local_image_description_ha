@@ -74,16 +74,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         }
     }
     
-    # Create info sensor with integration ID
-    info_entity_id = f"sensor.ollama_vision_info_{entry.entry_id[:7]}"
-    hass.states.async_set(info_entity_id, entry.entry_id, {
-        "friendly_name": f"Ollama Vision {name} Info",
-        "icon": "mdi:information-outline",
-        "integration_id": entry.entry_id,
-        "host": host,
-        "port": port,
-        "model": model
-    })
+    # Register service
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_ANALYZE_IMAGE,
+        handle_analyze_image,
+        schema=ANALYZE_IMAGE_SCHEMA,
+    )
+    
+    # Set up platforms
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    
+    return True
     
     # Define the analyze_image service
 async def handle_analyze_image(call: ServiceCall):
