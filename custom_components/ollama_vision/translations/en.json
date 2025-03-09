@@ -55,31 +55,31 @@
     "services": {
       "analyze_image": {
         "name": "Analyze Image",
-        "description": "Analyze an image using the Ollama vision model.",
+        "description": "Send an image to Ollama for analysis and create a sensor with the result. Optionally elaborate the description with a text model.",
         "fields": {
           "image_url": {
             "name": "Image URL",
-            "description": "URL of the image to analyze"
+            "description": "URL of the image to analyze."
           },
           "prompt": {
-            "name": "Vision Prompt!!!",
-            "description": "Prompt sent to the Ollama vision model"
+            "name": "Vision Prompt",
+            "description": "Prompt to send to Ollama vision model with the image."
           },
           "image_name": {
             "name": "Image Name",
-            "description": "Unique name for the generated sensor"            
+            "description": "Unique name for this image (used for sensor naming)."
           },
           "device_id": {
-            "name": "Device ID",
-            "description": "Device identifier (optional)"
+            "name": "Configuration",
+            "description": "Pick the Ollama Vision device to use for this analysis. A device represents a specific vision and text model."
           },
           "use_text_model": {
             "name": "Use Text Model",
-            "description": "Whether to elaborate vision results using the text model"
+            "description": "Whether to use the text model to elaborate on the vision model's description."
           },
           "text_prompt": {
             "name": "Text Prompt",
-            "description": "Prompt template for the text model. Include {description} to reference vision results."
+            "description": "Prompt template for the text model. See the default template to learn how to reference the vision model's output."
           }
         }
       }
