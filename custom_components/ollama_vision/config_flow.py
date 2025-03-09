@@ -20,6 +20,9 @@ from .const import (
     CONF_TEXT_MODEL,
     DEFAULT_TEXT_PORT,
     DEFAULT_TEXT_MODEL,
+    CONF_VISION_KEEPALIVE,
+    DEFAULT_KEEPALIVE,
+    CONF_TEXT_KEEPALIVE
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -100,10 +103,12 @@ class OllamaVisionConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Required(CONF_HOST): str,
                     vol.Required(CONF_PORT, default=DEFAULT_PORT): int,
                     vol.Required(CONF_MODEL, default=DEFAULT_MODEL): str,
+                    vol.Required(CONF_VISION_KEEPALIVE, default=DEFAULT_KEEPALIVE): int,
                     vol.Optional(CONF_TEXT_MODEL_ENABLED, default=False): bool,
                     vol.Optional(CONF_TEXT_HOST): str,
                     vol.Optional(CONF_TEXT_PORT, default=DEFAULT_TEXT_PORT): int,
                     vol.Optional(CONF_TEXT_MODEL, default=DEFAULT_TEXT_MODEL): str,
+                    vol.Optional(CONF_TEXT_KEEPALIVE, default=DEFAULT_KEEPALIVE): int,
                 }
             ),
             errors=errors,
@@ -147,6 +152,10 @@ class OllamaVisionOptionsFlow(config_entries.OptionsFlow):
                         CONF_MODEL, 
                         default=options.get(CONF_MODEL, data.get(CONF_MODEL, DEFAULT_MODEL))
                     ): str,
+                    vol.Required(
+                        CONF_VISION_KEEPALIVE,
+                        default=options.get(CONF_VISION_KEEPALIVE, data.get(CONF_VISION_KEEPALIVE, DEFAULT_KEEPALIVE))
+                    ): int,
                     vol.Optional(
                         CONF_TEXT_MODEL_ENABLED,
                         default=options.get(CONF_TEXT_MODEL_ENABLED, data.get(CONF_TEXT_MODEL_ENABLED, False))
@@ -163,6 +172,10 @@ class OllamaVisionOptionsFlow(config_entries.OptionsFlow):
                         CONF_TEXT_MODEL,
                         default=options.get(CONF_TEXT_MODEL, data.get(CONF_TEXT_MODEL, DEFAULT_TEXT_MODEL))
                     ): str,
+                    vol.Optional(
+                        CONF_TEXT_KEEPALIVE,
+                        default=options.get(CONF_TEXT_KEEPALIVE, data.get(CONF_TEXT_KEEPALIVE, DEFAULT_KEEPALIVE))
+                    ): int,
                 }
             ),
         )

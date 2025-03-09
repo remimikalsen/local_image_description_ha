@@ -32,7 +32,10 @@ from .const import (
     CONF_TEXT_PORT,
     CONF_TEXT_MODEL,
     DEFAULT_TEXT_PORT,
-    DEFAULT_TEXT_MODEL
+    DEFAULT_TEXT_MODEL,
+    CONF_TEXT_KEEPALIVE,
+    DEFAULT_KEEPALIVE,
+    CONF_VISION_KEEPALIVE
 )
 from .api import OllamaClient
 
@@ -64,19 +67,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     port = entry.data.get(CONF_PORT) or entry.options.get(CONF_PORT)
     model = entry.data.get(CONF_MODEL) or entry.options.get(CONF_MODEL)
     name = entry.data.get(CONF_NAME)
+    vision_keepalive = entry.data.get(CONF_VISION_KEEPALIVE) or entry.options.get(CONF_VISION_KEEPALIVE, DEFAULT_KEEPALIVE)
     
     # Get text model settings
     text_model_enabled = entry.data.get(CONF_TEXT_MODEL_ENABLED) or entry.options.get(CONF_TEXT_MODEL_ENABLED, False)
     text_host = None
     text_port = None
     text_model = None
+    text_keepalive = DEFAULT_KEEPALIVE
     
     if text_model_enabled:
         text_host = entry.data.get(CONF_TEXT_HOST) or entry.options.get(CONF_TEXT_HOST)
         text_port = entry.data.get(CONF_TEXT_PORT) or entry.options.get(CONF_TEXT_PORT, DEFAULT_TEXT_PORT)
         text_model = entry.data.get(CONF_TEXT_MODEL) or entry.options.get(CONF_TEXT_MODEL, DEFAULT_TEXT_MODEL)
+        text_keepalive = entry.data.get(CONF_TEXT_KEEPALIVE) or entry.options.get(CONF_TEXT_KEEPALIVE, DEFAULT_KEEPALIVE)
     
-    client = OllamaClient(host, port, model, text_host, text_port, text_model)
+    client = OllamaClient(host, port, model, text_host, text_port, text_model, vision_keepalive, text_keepalive)
     
     # Store the client in hass.data
     hass.data[DOMAIN][entry.entry_id] = {
@@ -90,7 +96,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             CONF_TEXT_MODEL_ENABLED: text_model_enabled,
             CONF_TEXT_HOST: text_host,
             CONF_TEXT_PORT: text_port,
-            CONF_TEXT_MODEL: text_model
+            CONF_TEXT_MODEL: text_model,
+            CONF_TEXT_MODEL: text_model,
+            CONF_TEXT_KEEPALIVE: text_keepalive
         },
         "device_info": {
             "identifiers": {(DOMAIN, entry.entry_id)},
@@ -228,6 +236,13 @@ async def handle_analyze_image(hass, call):
         
         hass.states.async_set(entity_id, truncated_vision, attributes)
     
+    else:
+        # Trigger an event to notify the sensor platform to create the entity
+        hass.bus.async_fire(f"{DOMAIN}_create_sensor", {
+            "entry_id": entry_id_to_use,
+            "image_name": image_name
+        })        
+    
     # Store sensor info
     hass.data[DOMAIN][entry_id_to_use]["sensors"][image_name] = {
         "description": vision_description,  # Use vision output as primary
@@ -237,13 +252,8 @@ async def handle_analyze_image(hass, call):
     # Add text description if used
     if use_text_model and text_model_enabled:
         hass.data[DOMAIN][entry_id_to_use]["sensors"][image_name]["text_description"] = final_description
-    
-    # Trigger an event to notify the sensor platform to create the entity
-    hass.bus.async_fire(f"{DOMAIN}_create_sensor", {
-        "entry_id": entry_id_to_use,
-        "image_name": image_name
-    })
-    
+
+
     # Fire event for external consumers
     event_data = {
         "image_name": image_name,

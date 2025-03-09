@@ -10,18 +10,22 @@ _LOGGER = logging.getLogger(__name__)
 class OllamaClient:
     """Ollama API client."""
 
-    def __init__(self, host, port, model, text_host=None, text_port=None, text_model=None):
+    def __init__(self, host, port, model, text_host=None, text_port=None, text_model=None, 
+                 vision_keepalive=-1, text_keepalive=-1):
         """Initialize the client."""
         self.host = host
         self.port = port
         self.model = model
+        self.vision_keepalive = vision_keepalive
         self.api_base_url = f"http://{host}:{port}/api"
         
         self.text_enabled = text_host is not None
         self.text_host = text_host
         self.text_port = text_port
         self.text_model = text_model
+        self.text_keepalive = text_keepalive
         self.text_api_base_url = f"http://{text_host}:{text_port}/api" if self.text_enabled else None
+
 
     async def analyze_image(self, image_url, prompt):
         """Send an image analysis request to Ollama."""
@@ -44,7 +48,7 @@ class OllamaClient:
                         "prompt": prompt,
                         "images": [image_base64],
                         "stream": False,
-                        "keep_alive": -1  # Keep model loaded indefinitely
+                        "keep_alive": self.vision_keepalive
                     }
                     
                     # Send the request to Ollama generate endpoint
@@ -77,7 +81,7 @@ class OllamaClient:
                 "model": self.text_model,
                 "prompt": prompt,
                 "stream": False,
-                "keep_alive": -1  # Keep model loaded indefinitely
+                "keep_alive": self.vision_keepalive
             }
             
             async with aiohttp.ClientSession() as session:

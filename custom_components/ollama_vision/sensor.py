@@ -9,7 +9,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN
+from .const import DOMAIN, CONF_TEXT_MODEL_ENABLED, CONF_TEXT_MODEL_ENABLED, CONF_TEXT_MODEL_ENABLED, CONF_TEXT_HOST, CONF_TEXT_PORT, CONF_TEXT_MODEL
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -21,7 +21,15 @@ async def async_setup_entry(
     """Set up the Ollama Vision sensors."""
     # Create the info sensor for this configuration entry
     info_sensor = OllamaVisionInfoSensor(hass, entry)
-    async_add_entities([info_sensor], True)
+    entities = [vision_info_sensor]
+    
+    # Create text model info sensor if text model is enabled
+    text_model_enabled = entry.data.get(CONF_TEXT_MODEL_ENABLED) or entry.options.get(CONF_TEXT_MODEL_ENABLED, False)
+    if text_model_enabled:
+        text_info_sensor = OllamaTextModelInfoSensor(hass, entry)
+        entities.append(text_info_sensor)
+    
+    async_add_entities(entities, True)
     
     # Create a listener for new sensor requests
     @callback
@@ -85,6 +93,41 @@ class OllamaVisionInfoSensor(SensorEntity):
     def device_info(self):
         """Return device information about this entity."""
         return self._device_info
+
+class OllamaTextModelInfoSensor(SensorEntity):
+    """Sensor showing information about the Ollama Text Model."""
+
+    def __init__(self, hass, entry):
+        """Initialize the sensor."""
+        self.hass = hass
+        self.entry = entry
+        self.entry_id = entry.entry_id
+        self._attr_unique_id = f"{DOMAIN}_{entry.entry_id}_text_info"
+        self._attr_name = f"Ollama Text {entry.data.get('name')} Info"
+        self._attr_icon = "mdi:text-box-outline"
+        
+        # Get device info from hass.data
+        self._device_info = hass.data[DOMAIN][entry.entry_id]["device_info"]
+        
+        # Set initial state - use model name and host
+        text_host = hass.data[DOMAIN][entry.entry_id]["config"].get(CONF_TEXT_HOST)
+        text_model = hass.data[DOMAIN][entry.entry_id]["config"].get(CONF_TEXT_MODEL)
+        self._attr_native_value = f"{text_model} @ {text_host}"
+        
+        # Store attributes
+        self._attr_extra_state_attributes = {
+            "integration_id": entry.entry_id,
+            "host": text_host,
+            "port": hass.data[DOMAIN][entry.entry_id]["config"].get(CONF_TEXT_PORT),
+            "model": text_model,
+            "friendly_name": f"Text Model for {entry.data.get('name')}"
+        }
+
+    @property
+    def device_info(self):
+        """Return device information about this entity."""
+        return self._device_info
+
 
 class OllamaVisionImageSensor(SensorEntity):
     """Sensor for Ollama Vision image analysis results."""

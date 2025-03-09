@@ -4,11 +4,13 @@ DOMAIN = "ollama_vision"
 CONF_HOST = "host"
 CONF_PORT = "port"
 CONF_MODEL = "model"
+DEFAULT_KEEPALIVE = -1
 
 # Default values
 DEFAULT_PORT = 11434
 DEFAULT_MODEL = "moondream"
 DEFAULT_VISION_PROMPT = "Describe what you see in this image clearly and concisely."
+CONF_VISION_KEEPALIVE = "vision_keepalive"
 
 # Service call constants
 SERVICE_ANALYZE_IMAGE = "analyze_image"
@@ -28,6 +30,7 @@ CONF_TEXT_PORT = "text_port"
 CONF_TEXT_MODEL = "text_model"
 DEFAULT_TEXT_PORT = 11434
 DEFAULT_TEXT_MODEL = "llama3.1"
+CONF_TEXT_KEEPALIVE = "text_keepalive"
 
 # Textual model service call constants
 ATTR_USE_TEXT_MODEL = "use_text_model"
