@@ -43,7 +43,8 @@ class OllamaClient:
                         "model": self.model,
                         "prompt": prompt,
                         "images": [image_base64],
-                        "stream": False
+                        "stream": False,
+                        "keep_alive": -1  # Keep model loaded indefinitely
                     }
                     
                     # Send the request to Ollama generate endpoint
@@ -75,7 +76,8 @@ class OllamaClient:
             payload = {
                 "model": self.text_model,
                 "prompt": prompt,
-                "stream": False
+                "stream": False,
+                "keep_alive": -1  # Keep model loaded indefinitely
             }
             
             async with aiohttp.ClientSession() as session:
