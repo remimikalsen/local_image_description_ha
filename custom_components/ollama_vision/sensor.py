@@ -10,8 +10,9 @@ from .const import (
     DOMAIN,
     CONF_TEXT_MODEL_ENABLED,
     CONF_TEXT_HOST,
-    CONF_TEXT_PORT,
     CONF_TEXT_MODEL,
+    CONF_MODEL,
+    CONF_HOST,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -46,10 +47,10 @@ class OllamaVisionInfoSensor(SensorEntity):
         self.entry = entry
         config = hass.data[DOMAIN][entry.entry_id]["config"]
 
-        self._attr_unique_id = f"{DOMAIN}_{entry.entry_id}_info"
-        self._attr_name = f"Ollama Vision {entry.data.get('name')} Info"
+        self._attr_unique_id = f"{DOMAIN}_{entry.entry_id}_text_info"
+        self._attr_name = f"Ollama Vision {config['name']} Info"
         self._attr_icon = "mdi:information-outline"
-        self._attr_native_value = f"{config['model']} @ {config['host']}"
+        self._attr_native_value = f"{config[CONF_MODEL]} @ {config[CONF_HOST]}"
 
     @property
     def device_info(self):
@@ -61,9 +62,10 @@ class OllamaTextModelInfoSensor(SensorEntity):
         self.hass = hass
         self.entry = entry
         config = hass.data[DOMAIN][entry.entry_id]["config"]
+
         self._attr_unique_id = f"{DOMAIN}_{entry.entry_id}_text_info"
         self._attr_name = f"Ollama Text {config['name']} Info"
-        self._attr_icon = "mdi:text-box-outline"
+        self._attr_icon = "mdi:information-outline"
         self._attr_native_value = f"{config[CONF_TEXT_MODEL]} @ {config[CONF_TEXT_HOST]}"
 
     @property
