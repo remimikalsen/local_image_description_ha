@@ -23,3 +23,10 @@ analyze_image:
       example: "front_door_camera"
       selector:
         text:
+    integration_id:
+      name: Integration ID
+      description: ID of the specific Ollama Vision integration to use (find it in the info sensor)
+      required: false
+      example: "abcd1234"
+      selector:
+        text:

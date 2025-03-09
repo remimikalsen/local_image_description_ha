@@ -7,13 +7,14 @@ CONF_MODEL = "model"
 
 # Default values
 DEFAULT_PORT = 11434
-DEFAULT_MODEL = "moondream"
+DEFAULT_MODEL = "llava"
 
 # Service call constants
 SERVICE_ANALYZE_IMAGE = "analyze_image"
 ATTR_IMAGE_URL = "image_url"
 ATTR_PROMPT = "prompt"
 ATTR_IMAGE_NAME = "image_name"
+ATTR_INTEGRATION_ID = "integration_id"
 
 # Event constants
 EVENT_IMAGE_ANALYZED = "ollama_vision_image_analyzed"
