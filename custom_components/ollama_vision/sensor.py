@@ -96,7 +96,7 @@ class OllamaVisionImageSensor(SensorEntity):
 
             if sensor_data.get("used_text_model"):
                 attributes.update({
-                    "text_description": sensor_data.get("text_description"),
+                    "final_description": sensor_data.get("final_description"),
                     "text_prompt": sensor_data.get("text_prompt"),
                     "used_text_model": True
                 })

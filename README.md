@@ -90,7 +90,7 @@ The integration fires an event ollama_vision_image_analyzed when an image is ana
  - description
  - image_url
  - integration_id
- - text_description (if text model was used)
+ - final_description (if text model was used)
  - used_text_model (if text model was used)
 
 You can use this event to trigger other automations.
