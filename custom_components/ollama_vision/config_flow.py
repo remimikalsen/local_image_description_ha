@@ -124,46 +124,46 @@ class OllamaVisionOptionsFlow(config_entries.OptionsFlow):
         self.config_entry = config_entry
 
     async def async_step_init(self, user_input=None):
-    """Handle options flow."""
-    if user_input is not None:
-        return self.async_create_entry(title="", data=user_input)
+        """Handle options flow."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
 
-    options = self.config_entry.options
-    data = self.config_entry.data
-    
-    return self.async_show_form(
-        step_id="init",
-        data_schema=vol.Schema(
-            {
-                vol.Required(
-                    CONF_HOST, 
-                    default=options.get(CONF_HOST, data.get(CONF_HOST))
-                ): str,
-                vol.Required(
-                    CONF_PORT, 
-                    default=options.get(CONF_PORT, data.get(CONF_PORT, DEFAULT_PORT))
-                ): int,
-                vol.Required(
-                    CONF_MODEL, 
-                    default=options.get(CONF_MODEL, data.get(CONF_MODEL, DEFAULT_MODEL))
-                ): str,
-                vol.Optional(
-                    CONF_TEXT_MODEL_ENABLED,
-                    default=options.get(CONF_TEXT_MODEL_ENABLED, data.get(CONF_TEXT_MODEL_ENABLED, False))
-                ): bool,
-                vol.Optional(
-                    CONF_TEXT_HOST,
-                    default=options.get(CONF_TEXT_HOST, data.get(CONF_TEXT_HOST, ""))
-                ): str,
-                vol.Optional(
-                    CONF_TEXT_PORT,
-                    default=options.get(CONF_TEXT_PORT, data.get(CONF_TEXT_PORT, DEFAULT_TEXT_PORT))
-                ): int,
-                vol.Optional(
-                    CONF_TEXT_MODEL,
-                    default=options.get(CONF_TEXT_MODEL, data.get(CONF_TEXT_MODEL, DEFAULT_TEXT_MODEL))
-                ): str,
-            }
-        ),
-    )
+        options = self.config_entry.options
+        data = self.config_entry.data
+        
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_HOST, 
+                        default=options.get(CONF_HOST, data.get(CONF_HOST))
+                    ): str,
+                    vol.Required(
+                        CONF_PORT, 
+                        default=options.get(CONF_PORT, data.get(CONF_PORT, DEFAULT_PORT))
+                    ): int,
+                    vol.Required(
+                        CONF_MODEL, 
+                        default=options.get(CONF_MODEL, data.get(CONF_MODEL, DEFAULT_MODEL))
+                    ): str,
+                    vol.Optional(
+                        CONF_TEXT_MODEL_ENABLED,
+                        default=options.get(CONF_TEXT_MODEL_ENABLED, data.get(CONF_TEXT_MODEL_ENABLED, False))
+                    ): bool,
+                    vol.Optional(
+                        CONF_TEXT_HOST,
+                        default=options.get(CONF_TEXT_HOST, data.get(CONF_TEXT_HOST, ""))
+                    ): str,
+                    vol.Optional(
+                        CONF_TEXT_PORT,
+                        default=options.get(CONF_TEXT_PORT, data.get(CONF_TEXT_PORT, DEFAULT_TEXT_PORT))
+                    ): int,
+                    vol.Optional(
+                        CONF_TEXT_MODEL,
+                        default=options.get(CONF_TEXT_MODEL, data.get(CONF_TEXT_MODEL, DEFAULT_TEXT_MODEL))
+                    ): str,
+                }
+            ),
+        )
 
