@@ -1,6 +1,4 @@
 """Sensor platform for Ollama Vision."""
-import logging
-
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
@@ -14,9 +12,8 @@ from .const import (
     CONF_TEXT_MODEL,
     CONF_MODEL,
     CONF_HOST,
+    INTEGRATION_NAME,
 )
-
-_LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -26,7 +23,11 @@ async def async_setup_entry(
     """Set up the Ollama Vision sensors."""
     entities = [OllamaVisionInfoSensor(hass, entry)]
 
-    if entry.data.get(CONF_TEXT_MODEL_ENABLED, False):
+    text_model_enabled = entry.options.get(
+        CONF_TEXT_MODEL_ENABLED, 
+        entry.data.get(CONF_TEXT_MODEL_ENABLED, False)
+)
+    if text_model_enabled:
         entities.append(OllamaTextModelInfoSensor(hass, entry))
 
     async_add_entities(entities, True)
@@ -59,7 +60,7 @@ class OllamaVisionInfoSensor(SensorEntity):
         config = hass.data[DOMAIN][entry.entry_id]["config"]
 
         self._attr_unique_id = f"{DOMAIN}_{entry.entry_id}_vision_info"
-        self._attr_name = f"Ollama Vision {config['name']} Info"
+        self._attr_name = f"Vision model {config['name']}"
         self._attr_icon = "mdi:information-outline"
         self._attr_native_value = f"{config[CONF_MODEL]} @ {config[CONF_HOST]}"
 
@@ -75,7 +76,7 @@ class OllamaTextModelInfoSensor(SensorEntity):
         config = hass.data[DOMAIN][entry.entry_id]["config"]
 
         self._attr_unique_id = f"{DOMAIN}_{entry.entry_id}_text_info"
-        self._attr_name = f"Ollama Text {config['name']} Info"
+        self._attr_name = f"Text model {config['name']}"
         self._attr_icon = "mdi:information-outline"
         self._attr_native_value = f"{config[CONF_TEXT_MODEL]} @ {config[CONF_TEXT_HOST]}"
 
@@ -97,7 +98,7 @@ class OllamaVisionImageSensor(SensorEntity):
         config_name_slug = slugify(config_name)
 
         # Make the user-facing name reflect both the config_name and image_name:
-        self._attr_name = f"Ollama Vision {config_name_slug} {image_name}"
+        self._attr_name = f"{INTEGRATION_NAME} {config_name_slug} {image_name}"
 
         # Unique ID remains the same; that’s what ensures the sensor is “the same” across restarts:
         self._attr_unique_id = f"{DOMAIN}_{entry_id}_{image_name}"

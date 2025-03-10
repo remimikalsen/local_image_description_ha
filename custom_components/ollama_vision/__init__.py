@@ -35,7 +35,10 @@ from .const import (
     DEFAULT_KEEPALIVE,
     CONF_VISION_KEEPALIVE,
     DEFAULT_PROMPT,
-    DEFAULT_TEXT_PROMPT
+    DEFAULT_TEXT_PROMPT,
+    __version__,
+    INTEGRATION_NAME,
+    MANUFACTURER,
 )
 from .api import OllamaClient
 
@@ -92,24 +95,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "client": client,
         "sensors": {},
         "config": {
-            "host": host,
-            "port": port,
-            "model": model,
-            "name": name,
+            CONF_HOST: host,
+            CONF_PORT: port,
+            CONF_MODEL: model,
+            CONF_NAME: name,
             CONF_TEXT_MODEL_ENABLED: text_model_enabled,
             CONF_TEXT_HOST: text_host,
             CONF_TEXT_PORT: text_port,
-            CONF_TEXT_MODEL: text_model,
             CONF_TEXT_MODEL: text_model,
             CONF_TEXT_KEEPALIVE: text_keepalive
         },
         "device_info": {
             "identifiers": {(DOMAIN, entry.entry_id)},
-            "name": f"Ollama Vision {name}",
-            "manufacturer": "Ollama",
-            "model": model,
-            "sw_version": "0.1.1",
-            "configuration_url": f"http://{host}:{port}",
+            "name": f"{INTEGRATION_NAME} {name}",
+            "manufacturer": MANUFACTURER,
+            "model": f"{model} + {text_model}" if text_model else model,
+            "sw_version": __version__,
         }
     }
     
@@ -134,7 +135,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         ent_registry = er.async_get(hass)
         text_sensor_entity_id = ent_registry.async_get_entity_id(
             domain="sensor",
-            platform=DOMAIN,  # The platform name as in sensor.py
+            platform=DOMAIN, 
             unique_id=f"{DOMAIN}_{entry.entry_id}_text_info",
         )
         if text_sensor_entity_id:

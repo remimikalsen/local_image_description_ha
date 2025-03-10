@@ -1,6 +1,9 @@
 """Constants for the Ollama Vision integration."""
-
+__version__ = "0.1.0"
 DOMAIN = "ollama_vision"
+INTEGRATION_NAME = "Ollama Vision"
+MANUFACTURER = "Ollama Vision by remimikalsen (https://github.com/remimikalsen)"
+
 CONF_HOST = "host"
 CONF_PORT = "port"
 CONF_MODEL = "model"

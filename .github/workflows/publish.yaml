@@ -83,10 +83,11 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           sha: ${{ steps.sha_resolver.outputs.TRUE_SHA }}
 
-      - name: Update VERSION and MANIFEST file and commit
+      - name: Update VERSION and manifest.json and const.py and commit
         run: |
 
           sed -i 's/"version": "[^"]*"/"version": "'${{ env.VERSION }}'"/' custom_components/ollama_vision/manifest.json
+          sed -i 's/__version__ = "[^"]*"/__version__ = "'${{ env.VERSION }}'"/' custom_components/ollama_vision/const.py
 
           echo "${{ env.VERSION }}" > VERSION
           git config user.name "github-actions[bot]"
